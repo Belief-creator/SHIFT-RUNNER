@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<title>SHIFT RUNNER · 重力双轨</title>
+<style>
+  /* ===================== 全局与配色 ===================== */
+  :root{
+    --c1:#2ed3be;         /* 青 */
+    --c2:#f2ae3c;         /* 金 */
+    --bg:#06070d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);}
+  body{
+    font-family: ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,"PingFang SC","Microsoft YaHei",monospace;
+    color:#dff6ff;
+    -webkit-user-select:none;user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:none;
+  }
+  #game{position:fixed;inset:0;}
+  canvas{display:block;}
+
+  /* 暗角，让画面中心更聚焦 */
+  .vignette{
+    position:fixed;inset:0;pointer-events:none;z-index:2;
+    background:radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 42%, rgba(0,0,0,.78) 100%);
+  }
+  /* 扫描线，增强 CRT / 科幻质感 */
+  .scan{
+    position:fixed;inset:0;pointer-events:none;z-index:3;opacity:.10;
+    background:repeating-linear-gradient(0deg,
+      rgba(255,255,255,.10) 0px, rgba(255,255,255,.10) 1px,
+      transparent 1px, transparent 3px);
+  }
+
+  /* ===================== 死亡闪红 ===================== */
+  .flash{
+    position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;
+    background:radial-gradient(ellipse at center, rgba(255,40,90,.10), rgba(255,20,60,.55));
+    transition:opacity .14s ease;
+  }
+  .flash.on{opacity:1;}
+
+  /* ===================== HUD ===================== */
+  #hud{
+    position:fixed;inset:0;z-index:5;pointer-events:none;
+    padding:22px 26px 24px;display:flex;flex-direction:column;justify-content:space-between;
+  }
+  .hud-top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;}
+  .stat.right{display:flex;flex-direction:column;align-items:flex-end;gap:14px;}
+
+  .label{
+    font-size:10px;letter-spacing:.34em;text-transform:uppercase;
+    color:rgba(170,220,250,.45);
+  }
+  .score{
+    margin-top:4px;font-size:46px;line-height:.95;font-weight:700;color:#fff;
+    letter-spacing:.04em;font-variant-numeric:tabular-nums;
+    text-shadow:0 0 18px rgba(87,201,193,.55),0 0 46px rgba(87,201,193,.22);
+  }
+  .score small{
+    font-size:12px;letter-spacing:.3em;color:rgba(180,225,255,.5);
+    margin-left:8px;font-weight:400;
+  }
+  .core{
+    margin-top:12px;display:flex;align-items:center;gap:9px;
+    font-size:11px;letter-spacing:.2em;color:rgba(175,220,245,.5);
+  }
+  .core .dot{
+    width:10px;height:10px;border-radius:50%;background:currentColor;
+    box-shadow:0 0 14px currentColor;transition:color .08s linear;
+  }
+
+  .speed-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:7px;}
+  .speed-bar{
+    width:180px;height:4px;border-radius:2px;overflow:hidden;
+    background:rgba(120,200,255,.14);
+  }
+  .speed-fill{
+    height:100%;width:6%;border-radius:2px;
+    background:linear-gradient(90deg,var(--c1),#d8d2b4 55%,var(--c2));
+    box-shadow:0 0 12px rgba(229,185,107,.7);
+    transition:width .12s linear;
+  }
+  .speed-val{font-size:12px;letter-spacing:.18em;color:rgba(190,235,255,.7);font-variant-numeric:tabular-nums;}
+  .best{font-size:13px;letter-spacing:.2em;color:rgba(190,235,255,.55);font-variant-numeric:tabular-nums;}
+
+  .hud-bottom{display:flex;justify-content:center;gap:14px;}
+  .hint{
+    display:flex;align-items:center;gap:9px;
+    padding:7px 13px;border-radius:9px;
+    font-size:11px;letter-spacing:.14em;color:rgba(210,240,255,.78);
+    background:rgba(3,7,16,.42);
+    backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  }
+  .key{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:46px;height:24px;padding:0 9px;
+    border:1px solid rgba(87,201,193,.35);border-radius:5px;
+    font-size:10px;letter-spacing:.1em;color:#d8f2ef;
+    background:rgba(87,201,193,.08);
+    box-shadow:inset 0 0 12px rgba(87,201,193,.12);
+  }
+
+  /* ===================== 覆盖层（开始 / 结束） ===================== */
+  .overlay{
+    position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at center, rgba(4,8,18,.5), rgba(2,4,10,.93));
+    backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+    transition:opacity .34s ease,visibility .34s ease;
+  }
+  .overlay.hide{opacity:0;visibility:hidden;pointer-events:none;}
+
+  .panel{text-align:center;padding:10px 22px;max-width:600px;}
+
+  .title{
+    font-size:clamp(38px,9vw,74px);font-weight:800;letter-spacing:.12em;line-height:1;
+    background:linear-gradient(180deg,#ffffff,#e8f6f3 42%,var(--c1) 70%,#2f6f6b);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 26px rgba(87,201,193,.45));
+  }
+  .subtitle{
+    margin-top:12px;font-size:12px;letter-spacing:.48em;
+    color:rgba(229,185,107,.95);text-shadow:0 0 18px rgba(229,185,107,.5);
+  }
+  .rules{margin:28px auto 0;display:grid;gap:11px;max-width:440px;text-align:left;}
+  .rule{
+    display:flex;gap:12px;align-items:flex-start;
+    font-size:12.5px;line-height:1.6;color:rgba(200,235,250,.76);
+  }
+  .rule i{
+    width:11px;height:11px;border-radius:50%;flex:none;margin-top:5px;
+    background:currentColor;box-shadow:0 0 14px currentColor;
+  }
+  .c1{color:var(--c1);}
+  .c2{color:var(--c2);}
+  .c3{color:#c2564f;}
+  .cta{
+    margin-top:32px;font-size:13px;letter-spacing:.36em;color:#eafcff;
+    animation:pulse 1.9s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+  .over-title{
+    font-size:clamp(34px,8vw,66px);font-weight:800;letter-spacing:.14em;line-height:1;
+    background:linear-gradient(180deg,#ffffff,#e7b9b3 45%,#c2564f 75%,#5e1f1b);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 26px rgba(194,86,79,.45));
+  }
+  .over-reason{
+    margin-top:16px;font-size:12px;letter-spacing:.3em;
+    color:rgba(231,185,179,.9);
+  }
+  .over-score{
+    margin-top:26px;font-size:52px;font-weight:700;color:#fff;
+    letter-spacing:.04em;font-variant-numeric:tabular-nums;
+    text-shadow:0 0 22px rgba(87,201,193,.55);
+  }
+  .over-score small{font-size:13px;letter-spacing:.3em;color:rgba(180,225,255,.5);margin-left:8px;font-weight:400;}
+  .over-best{margin-top:8px;font-size:12px;letter-spacing:.26em;color:rgba(190,235,255,.55);}
+
+  /* 颜色不符警示 */
+  #warn{
+    position:fixed;left:50%;bottom:92px;transform:translateX(-50%);
+    z-index:5;pointer-events:none;opacity:0;
+    font-size:11px;letter-spacing:.28em;color:#ff5d7d;
+    text-shadow:0 0 16px rgba(255,45,85,.8);
+    transition:opacity .18s ease;
+  }
+  #warn.on{opacity:1;animation:warnBlink .5s ease-in-out infinite;}
+  @keyframes warnBlink{0%,100%{opacity:.35}50%{opacity:1}}
+
+  /* ===================== 移动端触控按钮 ===================== */
+  #touch{
+    position:fixed;left:0;right:0;bottom:0;z-index:7;display:none;
+    justify-content:space-between;padding:0 22px 28px;pointer-events:none;
+  }
+  #touch button{
+    pointer-events:auto;width:88px;height:88px;border-radius:50%;
+    background:rgba(12,26,28,.45);color:#dff2f0;
+    border:1px solid rgba(87,201,193,.35);
+    font-family:inherit;font-size:12px;letter-spacing:.16em;
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    box-shadow:0 0 24px rgba(87,201,193,.14);
+  }
+  #touch button:active{transform:scale(.94);background:rgba(87,201,193,.18);}
+  #touch .grav{border-color:rgba(229,185,107,.4);color:#f7e6c8;box-shadow:0 0 24px rgba(229,185,107,.16);}
+  @media (pointer:coarse){
+    #touch{display:flex;}
+    .hud-bottom{display:none;}
+  }
+
+  /* 加载提示 */
+  #boot{
+    position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+    background:var(--bg);color:rgba(160,220,250,.7);
+    font-size:11px;letter-spacing:.4em;transition:opacity .5s ease;
+  }
+  #boot.hide{opacity:0;pointer-events:none;}
+</style>
+</head>
+<body>
+  <div id="game"></div>
+  <div class="vignette"></div>
+  <div class="scan"></div>
+  <div class="flash" id="flash"></div>
+
+  <!-- ===================== HUD ===================== -->
+  <div id="hud">
+    <div class="hud-top">
+      <div class="stat">
+        <div class="label">DISTANCE</div>
+        <div class="score"><span id="score">00000</span><small>M</small></div>
+        <div class="core"><i class="dot" id="coreDot"></i><span>核心颜色</span></div>
+      </div>
+      <div class="stat right">
+        <div class="speed-wrap">
+          <div class="label">SPEED</div>
+          <div class="speed-bar"><div class="speed-fill" id="speedFill"></div></div>
+          <div class="speed-val"><span id="speedVal">54</span> KM/H</div>
+        </div>
+        <div class="best">BEST <span id="bestVal">00000</span></div>
+      </div>
+    </div>
+    <div class="hud-bottom">
+      <div class="hint"><span class="key">SHIFT</span> 翻转重力</div>
+      <div class="hint"><span class="key">SPACE</span> 切换颜色</div>
+      <div class="hint"><span class="key">M</span> 静音</div>
+    </div>
+  </div>
+
+  <!-- 颜色不符提示 -->
+  <div id="warn">颜色不符 · 越线即失败</div>
+
+  <!-- 移动端触控 -->
+  <div id="touch">
+    <button id="btnColor" type="button">颜色</button>
+    <button id="btnGrav" class="grav" type="button">重力</button>
+  </div>
+
+  <!-- ===================== 开始界面 ===================== -->
+  <div class="overlay" id="startScreen">
+    <div class="panel">
+      <div class="title">SHIFT RUNNER</div>
+      <div class="subtitle">重 力 双 轨</div>
+      <div class="rules">
+        <div class="rule"><i class="c1"></i><span>小球自动向前冲刺，速度会越来越快</span></div>
+        <div class="rule"><i class="c2"></i><span><b>SHIFT</b> 翻转重力，在上下两层跑道间切换</span></div>
+        <div class="rule"><i class="c1"></i><span><b>SPACE</b> 切换小球颜色（青瓷 / 香槟金）</span></div>
+        <div class="rule"><i class="c2"></i><span>越过跑道分界线、或换层落地时，小球颜色必须与所在跑道一致，否则立即失败</span></div>
+        <div class="rule"><i class="c3"></i><span>红色斜纹墙会封锁一层跑道，记得提前换层</span></div>
+      </div>
+      <div class="cta">点击 / 按任意键 开始</div>
+    </div>
+  </div>
+
+  <!-- ===================== 结束界面 ===================== -->
+  <div class="overlay hide" id="overScreen">
+    <div class="panel">
+      <div class="over-title">GAME OVER</div>
+      <div class="over-reason" id="overReason">颜色不匹配</div>
+      <div class="over-score"><span id="overScore">00000</span><small>M</small></div>
+      <div class="over-best">BEST <span id="overBest">00000</span></div>
+      <div class="cta">按 R / 点击 重新开始</div>
+    </div>
+  </div>
+
+  <div id="boot">L O A D I N G</div>
+
+  <script>
+    /* 如果 6 秒后仍没有进入游戏，说明 three.js 没加载出来（通常是断网） */
+    window.__bootTimer = setTimeout(function () {
+      var b = document.getElementById('boot');
+      if (b && !b.classList.contains('hide')) b.textContent = 'three.js 加载失败 · 请检查网络';
+    }, 6000);
+  </script>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
+
+  <script type="module">
+  import * as THREE from 'three';
+
+  /* ==========================================================
+     一、全局配置
+     ========================================================== */
+  const CFG = {
+    halfW: 3.6,        // 隧道半宽（跑道宽度 = 7.2）
+    halfH: 3.0,        // 隧道半高（上下两层跑道相距 6）
+    ballR: 0.9,        // 小球半径
+    baseSpeed: 15,     // 初始前进速度（单位/秒）
+    maxSpeed: 40,      // 最高速度
+    accel: 0.95,       // 每秒加速量
+    barrierH: 1.85,    // 障碍墙高度
+    visibleZ: -82,     // 跑道向前生成到多远
+    cullZ: 16,         // 超过该 z 的赛道段回收
+  };
+
+  const COLORS = [0x2ed3be, 0xf2ae3c];        // 0 = 青，1 = 金（饱和度提高，远处也一眼可辨）
+  const SURFACE_Y = CFG.halfH - 0.1;          // 跑道内表面相对中线的距离
+  const BALL_REST_Y = SURFACE_Y - CFG.ballR;  // 小球贴地时球心的 |y|
+
+  /* ==========================================================
+     二、渲染器 / 场景 / 相机
+     ========================================================== */
+  const container = document.getElementById('game');
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  container.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x06070d);
+  scene.fog = new THREE.Fog(0x06070d, 26, 88);   // 远处淡出，营造纵深感
+
+  const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 260);
+  // 2.5D 侧视：相机在跑道侧上方，跑道向画面纵深斜向延伸
+  camera.position.set(12.8, 2.1, 10.4);
+
+  /* 灯光：环境光负责基础明暗，跑道与小球的颜色主要来自自发光 */
+  scene.add(new THREE.AmbientLight(0x88aaff, 0.6));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+  dirLight.position.set(3, 8, 10);
+  scene.add(dirLight);
+
+  /* ==========================================================
+     三、程序化贴图（不依赖任何外部图片资源）
+     ========================================================== */
+
+  // 3.1 径向光晕（小球辉光）
+  function makeRadialTexture() {
+    const s = 128;
+    const c = document.createElement('canvas');
+    c.width = c.height = s;
+    const g = c.getContext('2d');
+    const grd = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+    grd.addColorStop(0.00, 'rgba(255,255,255,1)');
+    grd.addColorStop(0.22, 'rgba(255,255,255,.55)');
+    grd.addColorStop(0.55, 'rgba(255,255,255,.14)');
+    grd.addColorStop(1.00, 'rgba(255,255,255,0)');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, s, s);
+    return new THREE.CanvasTexture(c);
+  }
+
+  // 3.2 条状光晕（跑道两侧的发光边，横向渐隐、纵向均匀）
+  function makeStripTexture() {
+    const w = 128, h = 8;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    const grd = g.createLinearGradient(0, 0, w, 0);
+    grd.addColorStop(0.00, 'rgba(255,255,255,0)');
+    grd.addColorStop(0.16, 'rgba(255,255,255,.85)');
+    grd.addColorStop(0.50, 'rgba(255,255,255,1)');
+    grd.addColorStop(0.84, 'rgba(255,255,255,.85)');
+    grd.addColorStop(1.00, 'rgba(255,255,255,0)');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, w, h);
+    return new THREE.CanvasTexture(c);
+  }
+
+  // 3.3 隧道侧壁网格（随世界滚动，提供速度感）
+  function makeGridTexture() {
+    const s = 256;
+    const c = document.createElement('canvas');
+    c.width = c.height = s;
+    const g = c.getContext('2d');
+    g.strokeStyle = 'rgba(140,215,205,1)';
+    g.lineWidth = 3;
+    g.strokeRect(1.5, 1.5, s - 3, s - 3);
+    g.strokeStyle = 'rgba(140,215,205,.28)';
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(s / 2, 0); g.lineTo(s / 2, s);
+    g.moveTo(0, s / 2); g.lineTo(s, s / 2);
+    g.stroke();
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return t;
+  }
+
+  // 3.4 障碍墙的危险斜纹
+  function makeStripeTexture() {
+    const s = 128;
+    const c = document.createElement('canvas');
+    c.width = c.height = s;
+    const g = c.getContext('2d');
+    g.fillStyle = '#241010';
+    g.fillRect(0, 0, s, s);
+    g.strokeStyle = '#c2564f';
+    g.lineWidth = 20;
+    for (let i = -s; i < s * 2; i += 46) {
+      g.beginPath();
+      g.moveTo(i, 0);
+      g.lineTo(i + s, s);
+      g.stroke();
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(3, 1.5);
+    return t;
+  }
+
+  const glowTex = makeRadialTexture();
+  const stripTex = makeStripTexture();
+  const wallTex = makeGridTexture();
+  const stripeTex = makeStripeTexture();
+
+  /* ==========================================================
+     四、共享几何体与材质（所有赛道段复用，降低开销）
+     ========================================================== */
+  const GEO = {
+    slab: new THREE.BoxGeometry(1, 0.85, 1),   // 跑道板（加厚，侧面是一条明显的色带）
+    glow: new THREE.PlaneGeometry(1, 1),      // 发光条
+    unit: new THREE.BoxGeometry(1, 1, 1),     // 通用方块
+  };
+
+  // 两种颜色的跑道材质（自发光霓虹；压暗成低调色面，靠边线提亮）
+  const trackMats = COLORS.map((hex) => new THREE.MeshStandardMaterial({
+    color: 0x0d1418,
+    emissive: hex,
+    emissiveIntensity: 0.5,
+    metalness: 0,
+    roughness: 1,
+  }));
+
+  // 跑道边线材质：不受光照/色调映射影响，保持干净锐利的高光线条
+  const edgeMats = COLORS.map((hex) => new THREE.MeshBasicMaterial({
+    color: hex,
+    toneMapped: false,
+  }));
+
+  // 两种颜色的跑道泛光（叠加混合，低透明度做柔和辉光）
+  const glowMats = COLORS.map((hex) => new THREE.MeshBasicMaterial({
+    color: hex,
+    map: stripTex,
+    transparent: true,
+    opacity: 0.10,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  }));
+
+  // 障碍墙材质
+  const barrierMat = new THREE.MeshBasicMaterial({ map: stripeTex });
+
+  /* ==========================================================
+     五、隧道侧壁（静态，纹理滚动制造速度感）
+     ========================================================== */
+  wallTex.repeat.set(54, 2);
+  const wallGeo = new THREE.PlaneGeometry(240, 6.2);
+  const wallMat = new THREE.MeshBasicMaterial({
+    map: wallTex,
+    color: 0x4f9c93,
+    transparent: true,
+    opacity: 0.38,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  // 只保留远端侧壁作为背景（近端侧壁会挡住侧视视线，故不添加）
+  const wallL = new THREE.Mesh(wallGeo, wallMat);
+  wallL.rotation.y = Math.PI / 2;
+  wallL.position.set(-CFG.halfW - 0.05, 0, -70);
+  scene.add(wallL);
+
+  /* ==========================================================
+     六、小球（径向渐变精灵：柔和发光，无硬描边）
+     ========================================================== */
+  /** 生成球体纹理：中心实体、边缘柔和过渡 */
+  function makeOrbTexture() {
+    const s = 128;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = s;
+    const g = cv.getContext('2d');
+    const grad = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+    grad.addColorStop(0.00, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.64, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.84, 'rgba(255,255,255,0.96)');
+    grad.addColorStop(0.94, 'rgba(255,255,255,0.55)');
+    grad.addColorStop(1.00, 'rgba(255,255,255,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, s, s);
+    const t = new THREE.CanvasTexture(cv);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }
+
+  const orbTex = makeOrbTexture();
+  const ballSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: orbTex,
+    color: COLORS[0],
+    transparent: true,
+    depthWrite: false,
+  }));
+  ballSprite.scale.set(CFG.ballR * 2, CFG.ballR * 2, 1);
+  scene.add(ballSprite);
+
+  // 球体外层光晕
+  const ballGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTex,
+    color: COLORS[0],
+    transparent: true,
+    opacity: 0.42,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  }));
+  ballGlow.scale.setScalar(3.0);
+  scene.add(ballGlow);
+
+  // 高光点：让球体有立体反光感
+  const ballSpec = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTex,
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.32,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  }));
+  ballSpec.scale.setScalar(0.44);
+  scene.add(ballSpec);
+
+  /* --- 尾迹粒子：小球身后拖出一串渐隐的发光粒子 --- */
+  const TRAIL_MAX = 34;
+  const trail = [];
+
+  for (let i = 0; i < TRAIL_MAX; i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: glowTex,
+      color: COLORS[0],
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }));
+    sp.visible = false;
+    scene.add(sp);
+    trail.push({ sp, life: 0, max: 0.3, vx: 0, vy: 0, vz: 0, size: 0.5 });
+  }
+
+  let trailCursor = 0;   // 环形复用下标
+  let trailTimer = 0;    // 发射计时器
+
+  /** 在被小球当前位置发射一颗尾迹粒子 */
+  function emitTrailParticle() {
+    const p = trail[trailCursor];
+    trailCursor = (trailCursor + 1) % TRAIL_MAX;
+
+    const spread = CFG.ballR * 0.85;
+    p.life = 0.3;
+    p.max = 0.3;
+    p.sp.material.color.setHex(COLORS[state.colorIdx]);
+    p.sp.position.set(
+      (Math.random() - 0.5) * spread,
+      state.ballY + (Math.random() - 0.5) * spread,
+      0.65 + Math.random() * 0.5
+    );
+    p.vx = (Math.random() - 0.5) * 1.4;
+    p.vy = (Math.random() - 0.5) * 1.8;
+    p.vz = state.speed * 0.45 + Math.random() * 3;
+    p.size = 0.4 + Math.random() * 0.34;
+    p.sp.visible = true;
+  }
+
+  /** 每帧推进尾迹粒子（渐隐 + 收缩） */
+  function updateTrail(dt) {
+    for (let i = 0; i < trail.length; i++) {
+      const p = trail[i];
+      if (p.life <= 0) continue;
+
+      p.life -= dt;
+      if (p.life <= 0) {
+        p.sp.visible = false;
+        continue;
+      }
+
+      const t = p.life / p.max;              // 1 → 0
+      p.sp.position.x += p.vx * dt;
+      p.sp.position.y += p.vy * dt;
+      p.sp.position.z += p.vz * dt;
+      p.sp.material.opacity = t * 0.68;
+      p.sp.scale.setScalar(p.size * (0.3 + t * 0.7) * 2);
+    }
+  }
+
+  /* ==========================================================
+     七、赛道段的生成 / 回收（对象池）
+     ========================================================== */
+  const segments = [];   // 正在使用的赛道段
+  const segPool = [];    // 回收池
+
+  /**
+   * 构建一个赛道段的网格组。
+   * 每段同时包含上层与下层两块跑道 + 各自的发光条 + 可能的障碍墙。
+   */
+  function buildSegment() {
+    const group = new THREE.Group();
+
+    const bSlab = new THREE.Mesh(GEO.slab, trackMats[0]);
+    const tSlab = new THREE.Mesh(GEO.slab, trackMats[0]);
+
+    const bGlow = new THREE.Mesh(GEO.glow, glowMats[0]);
+    bGlow.rotation.x = -Math.PI / 2;   // 面朝上
+    const tGlow = new THREE.Mesh(GEO.glow, glowMats[0]);
+    tGlow.rotation.x = Math.PI / 2;    // 面朝下
+
+    const bBar = new THREE.Mesh(GEO.unit, barrierMat);
+    const tBar = new THREE.Mesh(GEO.unit, barrierMat);
+
+    // 跑道两侧的发光边线（侧视时提供清晰的轮廓与高级质感）
+    const bEdgeL = new THREE.Mesh(GEO.unit, edgeMats[0]);
+    const bEdgeR = new THREE.Mesh(GEO.unit, edgeMats[0]);
+    const tEdgeL = new THREE.Mesh(GEO.unit, edgeMats[0]);
+    const tEdgeR = new THREE.Mesh(GEO.unit, edgeMats[0]);
+
+    group.add(bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR);
+    scene.add(group);
+
+    return {
+      group, bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR,
+      far: 0, near: 0, len: 0,
+      colorBottom: 0, colorTop: 0,
+      barrierBottom: false, barrierTop: false,
+    };
+  }
+
+  function acquireSegment() {
+    const s = segPool.pop();
+    return s || buildSegment();
+  }
+
+  function recycleSegment(s) {
+    s.group.visible = false;
+    segPool.push(s);
+  }
+
+  /** 根据数据摆放这一段的网格 */
+  function layoutSegment(s) {
+    const W = CFG.halfW * 2;
+    const len = s.len;
+
+    // --- 下层跑道 ---
+    s.bSlab.material = trackMats[s.colorBottom];
+    s.bSlab.scale.set(W, 1, len);
+    s.bSlab.position.set(0, -(SURFACE_Y + 0.425), 0);
+
+    s.bGlow.material = glowMats[s.colorBottom];
+    s.bGlow.scale.set(W * 1.06, len, 1);
+    s.bGlow.position.set(0, -SURFACE_Y + 0.03, 0);
+
+    // --- 上层跑道 ---
+    s.tSlab.material = trackMats[s.colorTop];
+    s.tSlab.scale.set(W, 1, len);
+    s.tSlab.position.set(0, SURFACE_Y + 0.425, 0);
+
+    s.tGlow.material = glowMats[s.colorTop];
+    s.tGlow.scale.set(W * 1.06, len, 1);
+    s.tGlow.position.set(0, SURFACE_Y - 0.03, 0);
+
+    // --- 障碍墙（放在本段中段） ---
+    const blen = Math.max(2.0, Math.min(len * 0.42, 4.2));
+
+    s.bBar.visible = s.barrierBottom;
+    s.bBar.scale.set(W, CFG.barrierH, blen);
+    s.bBar.position.set(0, -CFG.halfH + CFG.barrierH / 2 + 0.1, 0);
+
+    s.tBar.visible = s.barrierTop;
+    s.tBar.scale.set(W, CFG.barrierH, blen);
+    s.tBar.position.set(0, CFG.halfH - CFG.barrierH / 2 - 0.1, 0);
+
+    // --- 跑道边线：沿两侧边缘的一条细高光带 ---
+    const ED_W = 0.14, ED_H = 0.09;
+    const ED_X = CFG.halfW - 0.5;   // 略靠内，侧视时能看到两条平行光线
+
+    s.bEdgeL.material = edgeMats[s.colorBottom];
+    s.bEdgeL.scale.set(ED_W, ED_H, len);
+    s.bEdgeL.position.set(-ED_X, -SURFACE_Y + 0.06, 0);
+
+    s.bEdgeR.material = edgeMats[s.colorBottom];
+    s.bEdgeR.scale.set(ED_W, ED_H, len);
+    s.bEdgeR.position.set(ED_X, -SURFACE_Y + 0.06, 0);
+
+    s.tEdgeL.material = edgeMats[s.colorTop];
+    s.tEdgeL.scale.set(ED_W, ED_H, len);
+    s.tEdgeL.position.set(-ED_X, SURFACE_Y - 0.06, 0);
+
+    s.tEdgeR.material = edgeMats[s.colorTop];
+    s.tEdgeR.scale.set(ED_W, ED_H, len);
+    s.tEdgeR.position.set(ED_X, SURFACE_Y - 0.06, 0);
+  }
+
+  /** 规划这一段该出现什么颜色 / 障碍 */
+  function createSegment(far, near) {
+    const len = near - far;
+    const s = acquireSegment();
+
+    s.far = far;
+    s.near = near;
+    s.len = len;
+    s.group.position.z = (far + near) / 2;
+    s.group.visible = true;
+
+    // 开局安全区：小球前方若干段不刷障碍、两层同色，给玩家熟悉操作的时间
+    let safe = false;
+    if (state.intro) {
+      if (near > 0) {
+        safe = true;                       // 小球身后那一段直接算安全，不消耗配额
+      } else if (state.safeCount > 0) {
+        safe = true;
+        state.safeCount--;
+      }
+    }
+
+    s.colorBottom = safe ? 0 : (Math.random() < 0.5 ? 0 : 1);
+    s.colorTop = safe ? 0 : (Math.random() < 0.5 ? 0 : 1);
+    s.barrierBottom = false;
+    s.barrierTop = false;
+
+    // 2.5 秒后才开始出现障碍，且同一段最多只有一层被封锁
+    if (!safe && state.time > 2.5 && Math.random() < 0.42) {
+      if (Math.random() < 0.5) s.barrierBottom = true;
+      else s.barrierTop = true;
+    }
+
+    layoutSegment(s);
+    segments.push(s);
+  }
+
+  /** 向远处补足赛道 */
+  function spawnAhead() {
+    let guard = 0;
+    while (state.spawnFarZ > CFG.visibleZ && guard++ < 200) {
+      const len = nextSegmentLength();
+      createSegment(state.spawnFarZ - len, state.spawnFarZ);
+      state.spawnFarZ -= len;
+    }
+  }
+
+  /** 每段的长度按当前速度换算，保证“决策节奏”大致稳定 */
+  function nextSegmentLength() {
+    const speed = Math.max(CFG.baseSpeed, state.speed);
+    const seconds = 0.95 + Math.random() * 0.55;   // 每段约 0.95~1.5 秒
+    return Math.max(7, speed * seconds);
+  }
+
+  /** 回收跑到相机后面的赛道段 */
+  function cullSegments() {
+    for (let i = segments.length - 1; i >= 0; i--) {
+      if (segments[i].far > CFG.cullZ) {
+        recycleSegment(segments[i]);
+        segments.splice(i, 1);
+      }
+    }
+  }
+
+  /* ==========================================================
+     八、游戏状态
+     ========================================================== */
+  const state = {
+    mode: 'ready',          // ready | playing | dead
+    speed: CFG.baseSpeed,
+    time: 0,
+    distance: 0,
+    colorIdx: 0,            // 小球当前颜色索引
+    gravity: -1,            // -1 贴地，+1 贴顶
+    ballY: -BALL_REST_Y,
+    targetY: -BALL_REST_Y,
+    ballVel: 0,             // 小球纵向速度（弹性弹簧运动）
+    spawnFarZ: 18,
+    shake: 0,
+    squash: 0,              // 形变：>0 压扁，<0 拉长
+    squashVel: 0,           // 形变弹簧速度
+    intro: false,
+    safeCount: 6,           // 起步安全段数量（只统计小球前方）
+    dispScore: -1,
+    best: Number(localStorage.getItem('shiftRunnerBest') || 0),
+
+    /* --- 颜色判定相关 --- */
+    curSeg: null,           // 当前所处赛道段（用于检测“越线”）
+    mismatchTime: 0,        // 颜色不符持续时长（用于警示）
+  };
+
+  /* ==========================================================
+     九、音效（WebAudio 合成，无需音频文件）
+     ========================================================== */
+  let actx = null;
+  let muted = false;
+
+  function audioInit() {
+    if (!actx) {
+      try {
+        actx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {
+        actx = null;
+      }
+    }
+    if (actx && actx.state === 'suspended') actx.resume();
+  }
+
+  /** 播放一个短音（可带频率滑动） */
+  function tone(freq, dur, type, vol, endFreq) {
+    if (!actx || muted) return;
+    const t = actx.currentTime;
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    if (endFreq) osc.frequency.exponentialRampToValueAtTime(endFreq, t + dur);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.linearRampToValueAtTime(vol, t + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(gain).connect(actx.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.03);
+  }
+
+  const sfxColor = () => tone(720, 0.09, 'triangle', 0.05, 1120);
+  const sfxFlip = () => tone(180, 0.16, 'sawtooth', 0.035, 540);
+
+  /** 撞击音：低频下坠 + 噪声爆裂 */
+  function sfxCrash() {
+    if (!actx || muted) return;
+    tone(240, 0.5, 'sawtooth', 0.07, 38);
+
+    const len = Math.floor(actx.sampleRate * 0.4);
+    const buf = actx.createBuffer(1, len, actx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
+    }
+    const src = actx.createBufferSource();
+    src.buffer = buf;
+    const flt = actx.createBiquadFilter();
+    flt.type = 'lowpass';
+    flt.frequency.value = 1500;
+    const gain = actx.createGain();
+    gain.gain.value = 0.16;
+    src.connect(flt).connect(gain).connect(actx.destination);
+    src.start();
+  }
+
+  /* ==========================================================
+     十、UI 引用
+     ========================================================== */
+  const $ = (id) => document.getElementById(id);
+  const scoreEl = $('score');
+  const speedFill = $('speedFill');
+  const speedVal = $('speedVal');
+  const bestVal = $('bestVal');
+  const coreDot = $('coreDot');
+  const flashEl = $('flash');
+  const startScreen = $('startScreen');
+  const overScreen = $('overScreen');
+  const overReason = $('overReason');
+  const overScore = $('overScore');
+  const overBest = $('overBest');
+  const warnEl = $('warn');
+
+  bestVal.textContent = String(state.best).padStart(5, '0');
+
+  /* ==========================================================
+     十一、核心动作
+     ========================================================== */
+
+  /** 应用小球颜色（同时刷新球体、光晕、HUD） */
+  function applyColor(idx) {
+    const hex = COLORS[idx];
+    ballSprite.material.color.setHex(hex);
+    ballGlow.material.color.setHex(hex);
+    coreDot.style.color = '#' + hex.toString(16).padStart(6, '0');
+  }
+
+  /** SHIFT：翻转重力 */
+  function flipGravity() {
+    if (state.mode !== 'playing') return;
+    state.gravity *= -1;
+    state.targetY = state.gravity * BALL_REST_Y;
+    state.squash = -0.22;    // 起跳瞬间轻微拉长，落地再压扁
+    state.squashVel = -2.5;
+    sfxFlip();
+  }
+
+  /** SPACE：切换颜色 */
+  function toggleColor() {
+    if (state.mode !== 'playing') return;
+    state.colorIdx = 1 - state.colorIdx;
+    applyColor(state.colorIdx);
+    sfxColor();
+  }
+
+  /** 找到小球所在（z=0）的赛道段 */
+  function currentSegment() {
+    for (let i = 0; i < segments.length; i++) {
+      const s = segments[i];
+      if (s.far <= 0 && s.near >= 0) return s;
+    }
+    return null;
+  }
+
+  /**
+   * 颜色判定：小球颜色必须与所在跑道完全一致。
+   * 不做任何缓冲/宽限，一不符立刻结束。
+   */
+  function checkColor() {
+    if (state.mode !== 'playing') return true;
+    const seg = currentSegment();
+    if (!seg) return true;
+
+    const trackColor = state.gravity < 0 ? seg.colorBottom : seg.colorTop;
+    if (trackColor !== state.colorIdx) {
+      die('颜色不匹配');
+      return false;
+    }
+    return true;
+  }
+
+  /* ==========================================================
+     十二、流程：重置 / 开始 / 失败 / 重开
+     ========================================================== */
+
+  /** 重置整局：回收赛道、复位小球与数值、重建安全起步区 */
+  function resetGame() {
+    for (let i = 0; i < segments.length; i++) recycleSegment(segments[i]);
+    segments.length = 0;
+
+    state.speed = CFG.baseSpeed;
+    state.time = 0;
+    state.distance = 0;
+    state.colorIdx = 0;
+    state.gravity = -1;
+    state.ballY = -BALL_REST_Y;
+    state.targetY = -BALL_REST_Y;
+    state.ballVel = 0;
+    state.squash = 0;
+    state.squashVel = 0;
+    state.spawnFarZ = 18;
+    state.shake = 0;
+    state.dispScore = -1;
+    state.safeCount = 6;
+    state.mismatchTime = 0;
+    warnEl.classList.remove('on');
+
+    ballSprite.position.set(0, state.ballY, 0);
+    ballSprite.scale.set(CFG.ballR * 2, CFG.ballR * 2, 1);
+    ballGlow.position.set(0, state.ballY, 0);
+    ballSpec.position.set(0.42, state.ballY + 0.26, 0.36);
+    applyColor(0);
+
+    // 清空上一局残留的尾迹粒子
+    for (let i = 0; i < trail.length; i++) {
+      trail[i].life = 0;
+      trail[i].sp.visible = false;
+    }
+
+    // 生成起步赛道（intro=true 时会强制成安全段）
+    state.intro = true;
+    spawnAhead();
+    state.intro = false;
+
+    // 记录当前所在赛道段，避免开局就触发一次越线判定
+    state.curSeg = currentSegment();
+
+    // HUD 复位
+    scoreEl.textContent = '00000';
+    speedVal.textContent = String(Math.round(CFG.baseSpeed * 3.6));
+    speedFill.style.width = '6%';
+  }
+
+  /** 开始游戏 */
+  function startGame() {
+    audioInit();
+    resetGame();
+    state.mode = 'playing';
+    startScreen.classList.add('hide');
+    overScreen.classList.add('hide');
+  }
+
+  /** 失败 */
+  function die(reason) {
+    if (state.mode !== 'playing') return;
+    state.mode = 'dead';
+    state.shake = 1;
+    state.squash = 1;
+    state.squashVel = 0;
+    warnEl.classList.remove('on');
+
+    const score = Math.floor(state.distance);
+    if (score > state.best) {
+      state.best = score;
+      localStorage.setItem('shiftRunnerBest', String(score));
+    }
+
+    sfxCrash();
+    flashEl.classList.add('on');
+    setTimeout(() => flashEl.classList.remove('on'), 380);
+
+    // 稍等片刻再弹出结算，让撞击动画被看见
+    setTimeout(() => {
+      overReason.textContent = reason;
+      overScore.textContent = String(score).padStart(5, '0');
+      overBest.textContent = String(state.best).padStart(5, '0');
+      bestVal.textContent = String(state.best).padStart(5, '0');
+      overScreen.classList.remove('hide');
+    }, 620);
+  }
+
+  /** 重新开始（仅在死亡界面可用） */
+  function restartGame() {
+    if (state.mode !== 'dead') return;
+    startGame();
+  }
+
+  /* ==========================================================
+     十三、每帧更新
+     ========================================================== */
+  function update(dt) {
+    const playing = state.mode === 'playing';
+
+    /* --- 1. 速度与距离 --- */
+    if (playing) {
+      state.time += dt;
+      state.speed = Math.min(CFG.maxSpeed, CFG.baseSpeed + CFG.accel * state.time);
+      state.distance += state.speed * dt;
+    }
+
+    /* --- 2. 赛道向后滚动 --- */
+    const dz = playing ? state.speed * dt : 0;
+    if (dz > 0) {
+      for (let i = 0; i < segments.length; i++) {
+        const s = segments[i];
+        s.far += dz;
+        s.near += dz;
+        s.group.position.z += dz;
+      }
+      state.spawnFarZ += dz;
+      wallTex.offset.x += dz * 0.235;   // 网格与世界同步滚动
+      spawnAhead();
+      cullSegments();
+    }
+
+    /* --- 3. 小球纵向运动：阻尼弹簧 + 触面回弹 + 弹性形变 --- */
+    state.targetY = state.gravity * BALL_REST_Y;
+
+    // 弹簧把小球“弹”向目标跑道，而不是线性插值
+    state.ballVel += ((state.targetY - state.ballY) * 190 - state.ballVel * 11) * dt;
+    state.ballY += state.ballVel * dt;
+
+    // 与跑道表面碰撞：不能穿过跑道，触面时反弹并压扁
+    const hitFloor = state.gravity < 0 && state.ballY <= state.targetY;
+    const hitCeil = state.gravity > 0 && state.ballY >= state.targetY;
+
+    if (hitFloor || hitCeil) {
+      const impact = Math.abs(state.ballVel);
+      state.ballY = state.targetY;
+
+      if (impact > 1.5) {
+        state.ballVel = -state.ballVel * 0.32;          // 触面反弹
+        state.squash = Math.min(0.85, impact * 0.022);  // 冲击越大压得越扁
+        state.squashVel = 0;
+        // 落地瞬间即判定颜色（换层后落到不对色的跑道立刻失败）
+        if (playing && !checkColor()) return;
+      } else {
+        state.ballVel = 0;
+      }
+    }
+
+    // 形变弹簧：被压扁后会回弹并轻微过冲，产生“果冻”弹性
+    state.squashVel += (-state.squash * 480 - state.squashVel * 16) * dt;
+    state.squash += state.squashVel * dt;
+    if (state.squash < -0.35) state.squash = -0.35;
+
+    // 高速运动时沿运动方向轻微拉长
+    const stretch = Math.min(0.22, Math.abs(state.ballVel) * 0.0045);
+    const sy = (1 - 0.4 * state.squash) * (1 + stretch);
+    const sxz = (1 + 0.26 * state.squash) * (1 - stretch * 0.5);
+
+    // 压扁时让球底贴住跑道，避免看起来悬空
+    const anchor = CFG.ballR * (1 - sy) * (state.gravity < 0 ? -1 : 1);
+
+    ballSprite.position.set(0, state.ballY + anchor, 0);
+    ballSprite.scale.set(CFG.ballR * 2 * sxz, CFG.ballR * 2 * sy, 1);
+    ballGlow.position.set(0, state.ballY, 0);
+    // 高光点随球移动，偏向镜头一侧（+X）并略偏上，模拟球面反光
+    ballSpec.position.set(0.42 * sxz, state.ballY + anchor + 0.26 * sy, 0.36);
+
+    // 尾迹：按时间间隔持续发射粒子
+    if (playing) {
+      trailTimer -= dt;
+      if (trailTimer <= 0) {
+        trailTimer = 0.014;
+        emitTrailParticle();
+      }
+    }
+    updateTrail(dt);
+
+    // 光晕呼吸
+    ballGlow.material.opacity = 0.46 + Math.sin(performance.now() * 0.004) * 0.08;
+
+    /* --- 4. 判定（无任何宽容缓冲：颜色不符立即结束） --- */
+    if (playing) {
+      const seg = currentSegment();
+
+      if (seg) {
+        /* 4.1 障碍墙：物理判定（球心高度是否越过墙顶） */
+        const blen = Math.max(2.0, Math.min(seg.len * 0.42, 4.2));
+        const overlapZ = Math.abs(seg.group.position.z) < blen / 2 + CFG.ballR;
+
+        if (overlapZ && seg.barrierBottom && state.ballY - CFG.ballR < -CFG.halfH + CFG.barrierH) {
+          die('撞上障碍');
+          return;
+        }
+        if (overlapZ && seg.barrierTop && state.ballY + CFG.ballR > CFG.halfH - CFG.barrierH) {
+          die('撞上障碍');
+          return;
+        }
+
+        /* 4.2 越线判定：进入新一段跑道的当帧立刻判定 */
+        if (seg !== state.curSeg) {
+          state.curSeg = seg;
+          if (!checkColor()) return;
+        }
+      }
+
+      /* 4.3 颜色不符警示 */
+      const s3 = currentSegment();
+      const mismatched = !!s3 &&
+        (state.gravity < 0 ? s3.colorBottom : s3.colorTop) !== state.colorIdx;
+
+      if (mismatched) {
+        state.mismatchTime += dt;
+        if (state.mismatchTime > 0.12) warnEl.classList.add('on');
+      } else {
+        state.mismatchTime = 0;
+        warnEl.classList.remove('on');
+      }
+    }
+
+    /* --- 5. 相机跟随 + 震动 + 速度感（FOV） --- */
+    const camTargetY = 2.1 + state.ballY * 0.1;
+    camera.position.y += (camTargetY - camera.position.y) * Math.min(1, dt * 5);
+
+    const shake = state.shake;
+    state.shake *= Math.pow(0.02, dt);
+    camera.position.x = 12.8 + (Math.random() - 0.5) * shake * 0.55;
+    camera.position.y += (Math.random() - 0.5) * shake * 0.45;
+    camera.lookAt(0, -0.25 + state.ballY * 0.12, -12);
+
+    const fovTarget = 70 + (state.speed - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed) * 9;
+    if (Math.abs(camera.fov - fovTarget) > 0.02) {
+      camera.fov += (fovTarget - camera.fov) * Math.min(1, dt * 3);
+      camera.updateProjectionMatrix();
+    }
+
+    /* --- 6. HUD --- */
+    const dist = Math.floor(state.distance);
+    if (dist !== state.dispScore) {
+      state.dispScore = dist;
+      scoreEl.textContent = String(dist).padStart(5, '0');
+    }
+    const pct = 6 + (state.speed - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed) * 94;
+    speedFill.style.width = pct.toFixed(1) + '%';
+    speedVal.textContent = String(Math.round(state.speed * 3.6));
+  }
+
+  /* ==========================================================
+     十四、输入
+     ========================================================== */
+  window.addEventListener('keydown', (e) => {
+    // 阻止空格 / Shift 触发页面滚动等默认行为
+    if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+      e.preventDefault();
+    }
+    if (e.repeat) return;
+
+    // 标题界面：任意键开始
+    if (state.mode === 'ready') {
+      startGame();
+      return;
+    }
+    // 死亡界面：R / 空格 / 回车重开
+    if (state.mode === 'dead') {
+      if (e.code === 'KeyR' || e.code === 'Space' || e.code === 'Enter') restartGame();
+      return;
+    }
+
+    // 游戏中
+    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+      flipGravity();
+    } else if (e.code === 'Space') {
+      toggleColor();
+    } else if (e.code === 'KeyM') {
+      muted = !muted;   // 静音开关
+    }
+  });
+
+  // 鼠标 / 触摸点按覆盖层
+  startScreen.addEventListener('pointerdown', () => {
+    if (state.mode === 'ready') startGame();
+  });
+  overScreen.addEventListener('pointerdown', () => restartGame());
+
+  // 移动端按钮
+  $('btnColor').addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (state.mode === 'ready') startGame();
+    else toggleColor();
+  });
+  $('btnGrav').addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (state.mode === 'ready') startGame();
+    else flipGravity();
+  });
+
+  // 阻止右键菜单与长按选择
+  window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  /* ==========================================================
+     十五、窗口尺寸
+     ========================================================== */
+  function onResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  }
+  window.addEventListener('resize', onResize);
+
+  /* ==========================================================
+     十六、主循环
+     ========================================================== */
+  let lastTime = performance.now();
+
+  function loop(now) {
+    requestAnimationFrame(loop);
+    // 限制单帧步长，避免切后台回来后瞬移
+    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+    update(dt);
+    renderer.render(scene, camera);
+  }
+
+  /* ==========================================================
+     十七、启动
+     ========================================================== */
+  resetGame();
+  requestAnimationFrame(loop);
+
+  // 关闭加载提示
+  const bootEl = document.getElementById('boot');
+  bootEl.classList.add('hide');
+  setTimeout(() => bootEl.remove(), 600);
+  clearTimeout(window.__bootTimer);
+  </script>
+</body>
+</html>
