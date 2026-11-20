@@ -50,43 +50,101 @@
     padding:22px 26px 24px;display:flex;flex-direction:column;justify-content:space-between;
   }
   .hud-top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;}
-  .stat.right{display:flex;flex-direction:column;align-items:flex-end;gap:14px;}
+  .stat{
+    padding:13px 17px 14px;border-radius:16px;
+    background:linear-gradient(160deg,rgba(22,36,42,.62),rgba(7,11,17,.34));
+    border:1px solid rgba(120,205,192,.14);
+    box-shadow:0 12px 34px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.07);
+    backdrop-filter:blur(12px) saturate(1.15);-webkit-backdrop-filter:blur(12px) saturate(1.15);
+  }
+  .stat.right{display:flex;flex-direction:column;align-items:flex-end;gap:12px;}
 
   .label{
-    font-size:10px;letter-spacing:.34em;text-transform:uppercase;
-    color:rgba(170,220,250,.45);
+    font-size:9px;letter-spacing:.36em;text-transform:uppercase;
+    color:rgba(160,210,205,.55);
+  }
+  .label::before{
+    content:'';display:inline-block;width:5px;height:5px;border-radius:50%;
+    margin-right:7px;vertical-align:middle;
+    background:var(--c1);box-shadow:0 0 8px var(--c1);
   }
   .score{
-    margin-top:4px;font-size:46px;line-height:.95;font-weight:700;color:#fff;
-    letter-spacing:.04em;font-variant-numeric:tabular-nums;
-    text-shadow:0 0 18px rgba(87,201,193,.55),0 0 46px rgba(87,201,193,.22);
+    margin-top:6px;font-size:44px;line-height:.95;font-weight:700;
+    letter-spacing:.02em;font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,#ffffff 30%,#9fe3da);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 16px rgba(46,211,190,.55));
   }
   .score small{
     font-size:12px;letter-spacing:.3em;color:rgba(180,225,255,.5);
     margin-left:8px;font-weight:400;
   }
   .core{
-    margin-top:12px;display:flex;align-items:center;gap:9px;
-    font-size:11px;letter-spacing:.2em;color:rgba(175,220,245,.5);
+    margin-top:11px;display:inline-flex;align-items:center;gap:8px;
+    padding:5px 11px 5px 9px;border-radius:999px;
+    font-size:10px;letter-spacing:.2em;color:rgba(175,215,210,.62);
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.07);
   }
   .core .dot{
-    width:10px;height:10px;border-radius:50%;background:currentColor;
-    box-shadow:0 0 14px currentColor;transition:color .08s linear;
+    width:9px;height:9px;border-radius:50%;background:currentColor;
+    box-shadow:0 0 14px currentColor;
+    transition:color .08s linear;
+  }
+  .pts{margin-top:9px;font-size:9px;letter-spacing:.24em;color:rgba(175,215,210,.45);}
+  .pts b{color:#ffdda4;font-size:13px;letter-spacing:.05em;margin-left:6px;font-variant-numeric:tabular-nums;}
+
+  /* 连击提示（居中顶部） */
+  #combo{
+    position:fixed;left:50%;top:22px;z-index:6;pointer-events:none;
+    display:flex;align-items:baseline;gap:10px;
+    padding:6px 18px;border-radius:999px;
+    background:linear-gradient(180deg,rgba(242,174,60,.2),rgba(242,174,60,.04));
+    border:1px solid rgba(242,174,60,.4);
+    box-shadow:0 0 30px rgba(242,174,60,.22),inset 0 1px 0 rgba(255,255,255,.14);
+    opacity:0;transform:translateX(-50%) scale(.9);
+    transition:opacity .16s ease,transform .16s ease;
+  }
+  #combo.on{opacity:1;transform:translateX(-50%) scale(1);}
+  #combo b{font-size:17px;color:#ffe7bc;letter-spacing:.04em;}
+  #combo span{font-size:10px;letter-spacing:.22em;color:rgba(255,231,188,.72);}
+  #combo.pop{animation:comboPop .3s ease;}
+  @keyframes comboPop{
+    0%{transform:translateX(-50%) scale(1.22);}
+    100%{transform:translateX(-50%) scale(1);}
   }
 
-  .speed-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:7px;}
+  /* 阶段提示 */
+  #stage{
+    position:fixed;left:50%;top:112px;transform:translateX(-50%);
+    z-index:6;pointer-events:none;text-align:center;
+    opacity:0;transition:opacity .45s ease;
+  }
+  #stage.on{opacity:1;}
+  #stage .st-num{font-size:10px;letter-spacing:.44em;color:rgba(160,210,205,.65);}
+  #stage .st-name{
+    margin-top:7px;font-size:26px;font-weight:800;letter-spacing:.3em;color:#eafcff;
+    text-shadow:0 0 26px rgba(46,211,190,.6);
+  }
+
+  .speed-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
   .speed-bar{
-    width:180px;height:4px;border-radius:2px;overflow:hidden;
-    background:rgba(120,200,255,.14);
+    position:relative;width:186px;height:7px;border-radius:999px;overflow:hidden;
+    background:rgba(120,205,192,.13);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);
+  }
+  .speed-bar::after{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(90deg,rgba(4,8,12,.9) 0 2px,transparent 2px 18px);
   }
   .speed-fill{
-    height:100%;width:6%;border-radius:2px;
-    background:linear-gradient(90deg,var(--c1),#d8d2b4 55%,var(--c2));
-    box-shadow:0 0 12px rgba(229,185,107,.7);
+    height:100%;width:6%;border-radius:999px;
+    background:linear-gradient(90deg,var(--c1),#e6dcb4 55%,var(--c2));
+    box-shadow:0 0 14px rgba(242,174,60,.55);
     transition:width .12s linear;
   }
-  .speed-val{font-size:12px;letter-spacing:.18em;color:rgba(190,235,255,.7);font-variant-numeric:tabular-nums;}
-  .best{font-size:13px;letter-spacing:.2em;color:rgba(190,235,255,.55);font-variant-numeric:tabular-nums;}
+  .speed-val{font-size:11px;letter-spacing:.2em;color:rgba(190,235,230,.72);font-variant-numeric:tabular-nums;}
+  .best{font-size:11px;letter-spacing:.22em;color:rgba(190,235,230,.5);font-variant-numeric:tabular-nums;}
 
   .hud-bottom{display:flex;justify-content:center;gap:14px;}
   .hint{
@@ -126,23 +184,31 @@
     margin-top:12px;font-size:12px;letter-spacing:.48em;
     color:rgba(229,185,107,.95);text-shadow:0 0 18px rgba(229,185,107,.5);
   }
-  .rules{margin:28px auto 0;display:grid;gap:11px;max-width:440px;text-align:left;}
+  .rules{margin:26px auto 0;display:grid;gap:8px;max-width:470px;text-align:left;}
   .rule{
     display:flex;gap:12px;align-items:flex-start;
-    font-size:12.5px;line-height:1.6;color:rgba(200,235,250,.76);
+    padding:9px 13px;border-radius:11px;
+    font-size:12.5px;line-height:1.65;color:rgba(200,235,230,.78);
+    background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.012));
+    border:1px solid rgba(255,255,255,.055);
   }
   .rule i{
-    width:11px;height:11px;border-radius:50%;flex:none;margin-top:5px;
+    width:9px;height:9px;border-radius:50%;flex:none;margin-top:6px;
     background:currentColor;box-shadow:0 0 14px currentColor;
   }
   .c1{color:var(--c1);}
   .c2{color:var(--c2);}
   .c3{color:#c2564f;}
   .cta{
-    margin-top:32px;font-size:13px;letter-spacing:.36em;color:#eafcff;
-    animation:pulse 1.9s ease-in-out infinite;
+    margin:30px auto 0;display:inline-flex;align-items:center;gap:11px;
+    padding:12px 28px;border-radius:999px;
+    font-size:12px;letter-spacing:.32em;color:#eafcff;
+    border:1px solid rgba(46,211,190,.38);
+    background:linear-gradient(180deg,rgba(46,211,190,.18),rgba(46,211,190,.04));
+    box-shadow:0 0 34px rgba(46,211,190,.2),inset 0 1px 0 rgba(255,255,255,.14);
+    animation:pulse 2.1s ease-in-out infinite;
   }
-  @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+  @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
 
   .over-title{
     font-size:clamp(34px,8vw,66px);font-weight:800;letter-spacing:.14em;line-height:1;
@@ -155,9 +221,13 @@
     color:rgba(231,185,179,.9);
   }
   .over-score{
-    margin-top:26px;font-size:52px;font-weight:700;color:#fff;
+    display:inline-block;margin-top:22px;padding:12px 32px 16px;border-radius:20px;
+    font-size:52px;font-weight:700;color:#fff;
     letter-spacing:.04em;font-variant-numeric:tabular-nums;
-    text-shadow:0 0 22px rgba(87,201,193,.55);
+    background:linear-gradient(160deg,rgba(22,36,42,.62),rgba(7,11,17,.32));
+    border:1px solid rgba(120,205,192,.14);
+    box-shadow:0 14px 38px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);
+    text-shadow:0 0 26px rgba(46,211,190,.5);
   }
   .over-score small{font-size:13px;letter-spacing:.3em;color:rgba(180,225,255,.5);margin-left:8px;font-weight:400;}
   .over-best{margin-top:8px;font-size:12px;letter-spacing:.26em;color:rgba(190,235,255,.55);}
@@ -215,6 +285,7 @@
         <div class="label">DISTANCE</div>
         <div class="score"><span id="score">00000</span><small>M</small></div>
         <div class="core"><i class="dot" id="coreDot"></i><span>核心颜色</span></div>
+        <div class="pts">SCORE<b id="ptsVal">0</b></div>
       </div>
       <div class="stat right">
         <div class="speed-wrap">
@@ -235,6 +306,10 @@
   <!-- 颜色不符提示 -->
   <div id="warn">颜色不符 · 越线即失败</div>
 
+  <!-- 连击 / 阶段提示 -->
+  <div id="combo"><b id="comboMult">×1.0</b><span id="comboTxt">连击 0</span></div>
+  <div id="stage"><div class="st-num" id="stageNum">STAGE 1</div><div class="st-name" id="stageName">热 身</div></div>
+
   <!-- 移动端触控 -->
   <div id="touch">
     <button id="btnColor" type="button">颜色</button>
@@ -249,9 +324,10 @@
       <div class="rules">
         <div class="rule"><i class="c1"></i><span>小球自动向前冲刺，速度会越来越快</span></div>
         <div class="rule"><i class="c2"></i><span><b>SHIFT</b> 翻转重力，在上下两层跑道间切换</span></div>
-        <div class="rule"><i class="c1"></i><span><b>SPACE</b> 切换小球颜色（青瓷 / 香槟金）</span></div>
+        <div class="rule"><i class="c1"></i><span><b>SPACE</b> 切换小球颜色（青 / 金）</span></div>
         <div class="rule"><i class="c2"></i><span>越过跑道分界线、或换层落地时，小球颜色必须与所在跑道一致，否则立即失败</span></div>
-        <div class="rule"><i class="c3"></i><span>红色斜纹墙会封锁一层跑道，记得提前换层</span></div>
+        <div class="rule"><i class="c3"></i><span>红色斜纹墙封锁一层；金色光点收集加分；亮金色加速带提速、紫色弹跳板强制换层</span></div>
+        <div class="rule"><i class="c3"></i><span>跑道上出现缺口时，那一层整段消失 —— 必须待在没有断开的层</span></div>
       </div>
       <div class="cta">点击 / 按任意键 开始</div>
     </div>
@@ -264,6 +340,7 @@
       <div class="over-reason" id="overReason">颜色不匹配</div>
       <div class="over-score"><span id="overScore">00000</span><small>M</small></div>
       <div class="over-best">BEST <span id="overBest">00000</span></div>
+      <div class="over-best">得分 <span id="overPts">0</span> · 最高连击 <span id="overCombo">0</span></div>
       <div class="cta">按 R / 点击 重新开始</div>
     </div>
   </div>
@@ -456,6 +533,12 @@
   // 障碍墙材质
   const barrierMat = new THREE.MeshBasicMaterial({ map: stripeTex });
 
+  // 加速带（亮金）/ 弹跳板（紫）
+  const boostMat = new THREE.MeshBasicMaterial({ color: 0xffc46b, toneMapped: false });
+  const jumpMat = new THREE.MeshBasicMaterial({ color: 0xb98bff, toneMapped: false });
+  // 断裂跑道的端头警示条
+  const dangerMat = new THREE.MeshBasicMaterial({ color: 0xd8574e, toneMapped: false });
+
   /* ==========================================================
      五、隧道侧壁（静态，纹理滚动制造速度感）
      ========================================================== */
@@ -499,10 +582,21 @@
   }
 
   const orbTex = makeOrbTexture();
+
+  // 收集光点材质：复用实心球纹理，保证是清晰的发光小球而不是一团雾
+  const pickMat = new THREE.SpriteMaterial({
+    map: orbTex,
+    color: 0xffd48a,
+    transparent: true,
+    opacity: 1,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
   const ballSprite = new THREE.Sprite(new THREE.SpriteMaterial({
     map: orbTex,
     color: COLORS[0],
     transparent: true,
+    opacity: 0.82,        // 半透明，能看到后面的跑道
     depthWrite: false,
   }));
   ballSprite.scale.set(CFG.ballR * 2, CFG.ballR * 2, 1);
@@ -625,14 +719,37 @@
     const tEdgeL = new THREE.Mesh(GEO.unit, edgeMats[0]);
     const tEdgeR = new THREE.Mesh(GEO.unit, edgeMats[0]);
 
-    group.add(bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR);
+    // 收集光点（每段最多两个）
+    const orbA = new THREE.Sprite(pickMat);
+    const orbB = new THREE.Sprite(pickMat);
+    orbA.visible = false;
+    orbB.visible = false;
+
+    // 加速带 / 弹跳板
+    const bPad = new THREE.Mesh(GEO.unit, boostMat);
+    const tPad = new THREE.Mesh(GEO.unit, boostMat);
+    bPad.visible = false;
+    tPad.visible = false;
+
+    // 断裂跑道端头的红色警示条
+    const bHoleMark = new THREE.Mesh(GEO.unit, dangerMat);
+    const tHoleMark = new THREE.Mesh(GEO.unit, dangerMat);
+    bHoleMark.visible = false;
+    tHoleMark.visible = false;
+
+    group.add(bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR,
+      orbA, orbB, bPad, tPad, bHoleMark, tHoleMark);
     scene.add(group);
 
     return {
       group, bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR,
+      bPad, tPad, bHoleMark, tHoleMark, orbNodes: [orbA, orbB],
       far: 0, near: 0, len: 0,
       colorBottom: 0, colorTop: 0,
       barrierBottom: false, barrierTop: false,
+      holeBottom: false, holeTop: false,
+      padLane: -1, padType: 'boost', padZ: 0, padHit: false,
+      orbLane: [-1, -1], orbZ: [0, 0], orbTaken: [false, false],
     };
   }
 
@@ -699,6 +816,53 @@
     s.tEdgeR.material = edgeMats[s.colorTop];
     s.tEdgeR.scale.set(ED_W, ED_H, len);
     s.tEdgeR.position.set(ED_X, SURFACE_Y - 0.06, 0);
+
+    // --- 断裂跑道：整层隐藏（板面 / 泛光 / 边线），只在近端留一条红色断口标记 ---
+    s.bSlab.visible = !s.holeBottom;
+    s.bGlow.visible = !s.holeBottom;
+    s.bEdgeL.visible = !s.holeBottom;
+    s.bEdgeR.visible = !s.holeBottom;
+    s.bHoleMark.visible = s.holeBottom;
+    if (s.holeBottom) {
+      s.bHoleMark.scale.set(W, 0.3, 0.5);
+      s.bHoleMark.position.set(0, -SURFACE_Y + 0.16, len / 2 - 0.3);
+    }
+
+    s.tSlab.visible = !s.holeTop;
+    s.tGlow.visible = !s.holeTop;
+    s.tEdgeL.visible = !s.holeTop;
+    s.tEdgeR.visible = !s.holeTop;
+    s.tHoleMark.visible = s.holeTop;
+    if (s.holeTop) {
+      s.tHoleMark.scale.set(W, 0.3, 0.5);
+      s.tHoleMark.position.set(0, SURFACE_Y - 0.16, len / 2 - 0.3);
+    }
+
+    // --- 加速带 / 弹跳板：贴在跑道面上的发光踏板 ---
+    const padMatNow = s.padType === 'jump' ? jumpMat : boostMat;
+    s.bPad.visible = s.padLane === 0;
+    s.tPad.visible = s.padLane === 1;
+    if (s.padLane === 0) {
+      s.bPad.material = padMatNow;
+      s.bPad.scale.set(W * 0.44, 0.12, 1.4);
+      s.bPad.position.set(0, -SURFACE_Y + 0.06, s.padZ);
+    } else if (s.padLane === 1) {
+      s.tPad.material = padMatNow;
+      s.tPad.scale.set(W * 0.44, 0.12, 1.4);
+      s.tPad.position.set(0, SURFACE_Y - 0.06, s.padZ);
+    }
+
+    // --- 收集光点 ---
+    for (let i = 0; i < 2; i++) {
+      const node = s.orbNodes[i];
+      if (s.orbLane[i] < 0 || s.orbTaken[i]) {
+        node.visible = false;
+        continue;
+      }
+      node.visible = true;
+      node.position.set(0, s.orbLane[i] === 0 ? -BALL_REST_Y : BALL_REST_Y, s.orbZ[i]);
+      node.scale.setScalar(1.15);
+    }
   }
 
   /** 规划这一段该出现什么颜色 / 障碍 */
@@ -725,13 +889,60 @@
 
     s.colorBottom = safe ? 0 : (Math.random() < 0.5 ? 0 : 1);
     s.colorTop = safe ? 0 : (Math.random() < 0.5 ? 0 : 1);
+
+    // 每段重新规划玩法元素
     s.barrierBottom = false;
     s.barrierTop = false;
+    s.holeBottom = false;
+    s.holeTop = false;
+    s.padLane = -1;
+    s.padHit = false;
+    s.orbLane[0] = -1;
+    s.orbLane[1] = -1;
+    s.orbTaken[0] = false;
+    s.orbTaken[1] = false;
 
-    // 2.5 秒后才开始出现障碍，且同一段最多只有一层被封锁
-    if (!safe && state.time > 2.5 && Math.random() < 0.42) {
+    const stage = state.stage;
+    const armed = !safe && state.time > 2.5;   // 开局 2.5 秒内不刷任何玩法元素
+
+    // 障碍墙：封锁一层
+    if (armed && Math.random() < 0.42) {
       if (Math.random() < 0.5) s.barrierBottom = true;
       else s.barrierTop = true;
+    }
+
+    // 断裂缺口：第二阶段解锁，整层跑道消失（不与障碍墙同层）
+    if (armed && stage >= 2 && Math.random() < 0.2) {
+      if (Math.random() < 0.5) {
+        if (!s.barrierBottom) s.holeBottom = true;
+      } else if (!s.barrierTop) {
+        s.holeTop = true;
+      }
+    }
+
+    const blockedBottom = s.barrierBottom || s.holeBottom;   // 该层本段不可通行
+    const blockedTop = s.barrierTop || s.holeTop;
+
+    // 加速带 / 弹跳板：第三阶段解锁
+    if (armed && stage >= 3 && !(blockedBottom && blockedTop) && Math.random() < 0.22) {
+      s.padLane = blockedBottom ? 1 : (blockedTop ? 0 : (Math.random() < 0.5 ? 0 : 1));
+      s.padType = stage >= 4 && Math.random() < 0.5 ? 'jump' : 'boost';
+      s.padZ = (Math.random() * 0.5 - 0.2) * len;
+    }
+
+    // 收集光点：每段 0~2 个
+    if (Math.random() < (safe ? 0.5 : 0.72) && !(blockedBottom && blockedTop)) {
+      let lane = Math.random() < 0.5 ? 0 : 1;
+      if (lane === 0 && blockedBottom) lane = 1;
+      else if (lane === 1 && blockedTop) lane = 0;
+
+      s.orbLane[0] = lane;
+      s.orbZ[0] = (Math.random() * 0.55 - 0.25) * len;
+
+      if (!safe && Math.random() < 0.35) {
+        s.orbLane[1] = lane;                 // 同一层的连串光点，避免必然漏掉
+        s.orbZ[1] = s.orbZ[0] - len * 0.2;
+      }
     }
 
     layoutSegment(s);
@@ -786,6 +997,14 @@
     safeCount: 6,           // 起步安全段数量（只统计小球前方）
     dispScore: -1,
     best: Number(localStorage.getItem('shiftRunnerBest') || 0),
+
+    /* --- 玩法扩展 --- */
+    score: 0,               // 收集得分
+    combo: 0,               // 当前连击
+    comboMax: 0,            // 本局最高连击
+    comboTimer: 0,          // 连击剩余时间
+    boostTime: 0,           // 加速带剩余时间
+    stage: 1,               // 当前阶段（随距离提升，解锁新玩法）
 
     /* --- 颜色判定相关 --- */
     curSeg: null,           // 当前所处赛道段（用于检测“越线”）
@@ -867,6 +1086,15 @@
   const overScore = $('overScore');
   const overBest = $('overBest');
   const warnEl = $('warn');
+  const ptsVal = $('ptsVal');
+  const comboEl = $('combo');
+  const comboMult = $('comboMult');
+  const comboTxt = $('comboTxt');
+  const stageEl = $('stage');
+  const stageNum = $('stageNum');
+  const stageName = $('stageName');
+  const overPts = $('overPts');
+  const overCombo = $('overCombo');
 
   bestVal.textContent = String(state.best).padStart(5, '0');
 
@@ -898,6 +1126,60 @@
     state.colorIdx = 1 - state.colorIdx;
     applyColor(state.colorIdx);
     sfxColor();
+  }
+
+  /* ==========================================================
+     十一之二、玩法：收集光点 / 连击 / 阶段
+     ========================================================== */
+  const comboMultiplier = () => 1 + Math.min(state.combo, 20) * 0.1;
+
+  /** 刷新得分与连击 HUD */
+  function refreshPointsUI() {
+    ptsVal.textContent = String(state.score);
+    if (state.combo >= 2) {
+      comboEl.classList.add('on');
+      comboMult.textContent = '×' + comboMultiplier().toFixed(1);
+      comboTxt.textContent = '连击 ' + state.combo;
+    } else {
+      comboEl.classList.remove('on');
+    }
+  }
+
+  /** 吃到光点：加分、累积连击、让提示弹一下 */
+  function pickOrb() {
+    state.combo++;
+    state.comboTimer = 5;          // 5 秒内没再吃到就断连击
+    if (state.combo > state.comboMax) state.comboMax = state.combo;
+    state.score += Math.round(10 * comboMultiplier());
+    refreshPointsUI();
+
+    comboEl.classList.remove('pop');
+    void comboEl.offsetWidth;     // 强制重排以重启动画
+    comboEl.classList.add('pop');
+
+    tone(880 + Math.min(state.combo, 12) * 55, 0.09, 'triangle', 0.045, 1300);
+  }
+
+  /** 连击超时衰减：长时间没吃到光点就清零 */
+  function tickCombo(dt) {
+    if (state.combo <= 0) return;
+    state.comboTimer -= dt;
+    if (state.comboTimer <= 0) {
+      state.combo = 0;
+      refreshPointsUI();
+    }
+  }
+
+  const STAGE_NAMES = ['热 身', '断 裂', '加 速', '弹 跳', '极 限'];
+  let stageTimer = 0;
+
+  /** 显示新阶段提示 */
+  function showStage(st) {
+    stageNum.textContent = 'STAGE ' + st;
+    stageName.textContent = STAGE_NAMES[st - 1] || '极 限';
+    stageEl.classList.add('on');
+    clearTimeout(stageTimer);
+    stageTimer = setTimeout(() => stageEl.classList.remove('on'), 1800);
   }
 
   /** 找到小球所在（z=0）的赛道段 */
@@ -950,7 +1232,15 @@
     state.dispScore = -1;
     state.safeCount = 6;
     state.mismatchTime = 0;
+    state.score = 0;
+    state.combo = 0;
+    state.comboMax = 0;
+    state.comboTimer = 0;
+    state.boostTime = 0;
+    state.stage = 1;
     warnEl.classList.remove('on');
+    stageEl.classList.remove('on');
+    comboEl.classList.remove('on');
 
     ballSprite.position.set(0, state.ballY, 0);
     ballSprite.scale.set(CFG.ballR * 2, CFG.ballR * 2, 1);
@@ -974,6 +1264,7 @@
 
     // HUD 复位
     scoreEl.textContent = '00000';
+    ptsVal.textContent = '0';
     speedVal.textContent = String(Math.round(CFG.baseSpeed * 3.6));
     speedFill.style.width = '6%';
   }
@@ -1011,6 +1302,8 @@
       overReason.textContent = reason;
       overScore.textContent = String(score).padStart(5, '0');
       overBest.textContent = String(state.best).padStart(5, '0');
+      overPts.textContent = String(state.score);
+      overCombo.textContent = String(state.comboMax);
       bestVal.textContent = String(state.best).padStart(5, '0');
       overScreen.classList.remove('hide');
     }, 620);
@@ -1032,11 +1325,25 @@
     if (playing) {
       state.time += dt;
       state.speed = Math.min(CFG.maxSpeed, CFG.baseSpeed + CFG.accel * state.time);
-      state.distance += state.speed * dt;
+      if (state.boostTime > 0) state.boostTime -= dt;
+    }
+
+    // 加速带生效期间临时提速
+    const spd = state.speed * (state.boostTime > 0 ? 1.38 : 1);
+
+    if (playing) {
+      state.distance += spd * dt;
+
+      // 每 400 米进入新阶段，解锁新的玩法元素
+      const st = Math.min(5, 1 + Math.floor(state.distance / 400));
+      if (st !== state.stage) {
+        state.stage = st;
+        showStage(st);
+      }
     }
 
     /* --- 2. 赛道向后滚动 --- */
-    const dz = playing ? state.speed * dt : 0;
+    const dz = playing ? spd * dt : 0;
     if (dz > 0) {
       for (let i = 0; i < segments.length; i++) {
         const s = segments[i];
@@ -1113,6 +1420,12 @@
       const seg = currentSegment();
 
       if (seg) {
+        /* 4.0 断裂跑道：小球所在层整段没有跑道 → 直接坠落 */
+        if (state.gravity < 0 ? seg.holeBottom : seg.holeTop) {
+          die('跑道断裂');
+          return;
+        }
+
         /* 4.1 障碍墙：物理判定（球心高度是否越过墙顶） */
         const blen = Math.max(2.0, Math.min(seg.len * 0.42, 4.2));
         const overlapZ = Math.abs(seg.group.position.z) < blen / 2 + CFG.ballR;
@@ -1130,6 +1443,48 @@
         if (seg !== state.curSeg) {
           state.curSeg = seg;
           if (!checkColor()) return;
+        }
+      }
+
+      /* 4.4 光点收集 / 加速带 / 弹跳板 */
+      tickCombo(dt);
+
+      for (let i = 0; i < segments.length; i++) {
+        const s = segments[i];
+        const gz = s.group.position.z;
+
+        // 收集光点：掠过小球时按所在层判定
+        for (let k = 0; k < 2; k++) {
+          if (s.orbLane[k] < 0 || s.orbTaken[k]) continue;
+
+          const wz = gz + s.orbZ[k];
+          const oy = s.orbLane[k] === 0 ? -BALL_REST_Y : BALL_REST_Y;
+
+          if (wz > 1.8) {
+            s.orbTaken[k] = true;            // 已经掠过小球 → 丢弃（漏吃不清空连击）
+            s.orbNodes[k].visible = false;
+          } else if (Math.abs(wz) < 1.15 && Math.abs(state.ballY - oy) < 1.25) {
+            s.orbTaken[k] = true;
+            s.orbNodes[k].visible = false;
+            pickOrb();
+          }
+        }
+
+        // 加速带 / 弹跳板：踩中才触发
+        if (s.padLane >= 0 && !s.padHit) {
+          const wz = gz + s.padZ;
+          const py = s.padLane === 0 ? -BALL_REST_Y : BALL_REST_Y;
+
+          if (Math.abs(wz) < 1.1 && Math.abs(state.ballY - py) < 0.9) {
+            s.padHit = true;
+            if (s.padType === 'jump') {
+              flipGravity();                 // 弹跳板：强制换层
+              state.ballVel = state.gravity * 11;
+            } else {
+              state.boostTime = 1.15;        // 加速带：短暂提速
+              tone(520, 0.16, 'square', 0.042, 1040);
+            }
+          }
         }
       }
 
@@ -1169,9 +1524,9 @@
       state.dispScore = dist;
       scoreEl.textContent = String(dist).padStart(5, '0');
     }
-    const pct = 6 + (state.speed - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed) * 94;
+    const pct = Math.min(100, 6 + (spd - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed) * 94);
     speedFill.style.width = pct.toFixed(1) + '%';
-    speedVal.textContent = String(Math.round(state.speed * 3.6));
+    speedVal.textContent = String(Math.round(spd * 3.6));
   }
 
   /* ==========================================================
