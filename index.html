@@ -1274,9 +1274,12 @@
     audioInit();
     resetGame();
     state.mode = 'playing';
+    clearTimeout(overTimer);      // 取消上一局还没弹出的结算页
     startScreen.classList.add('hide');
     overScreen.classList.add('hide');
   }
+
+  let overTimer = 0;   // 结算页延时弹出的定时器
 
   /** 失败 */
   function die(reason) {
@@ -1298,7 +1301,11 @@
     setTimeout(() => flashEl.classList.remove('on'), 380);
 
     // 稍等片刻再弹出结算，让撞击动画被看见
-    setTimeout(() => {
+    clearTimeout(overTimer);
+    overTimer = setTimeout(() => {
+      // 这段时间内玩家可能已经重开了，此时不能再弹出结算页
+      if (state.mode !== 'dead') return;
+
       overReason.textContent = reason;
       overScore.textContent = String(score).padStart(5, '0');
       overBest.textContent = String(state.best).padStart(5, '0');
@@ -1565,6 +1572,11 @@
     if (state.mode === 'ready') startGame();
   });
   overScreen.addEventListener('pointerdown', () => restartGame());
+
+  // 结算页有 0.62 秒的弹出延迟，这段时间内点击任意位置也直接重开
+  window.addEventListener('pointerdown', () => {
+    if (state.mode === 'dead') restartGame();
+  });
 
   // 移动端按钮
   $('btnColor').addEventListener('pointerdown', (e) => {

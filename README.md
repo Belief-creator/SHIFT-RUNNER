@@ -4,11 +4,19 @@
 
 纯前端单文件实现，基于 Three.js，无构建步骤、无外部图片资源。
 
+## 在线游玩
+
+已通过 **GitHub Pages** 部署，打开即可玩，无需安装：
+
+**https://belief-creator.github.io/SHIFT-RUNNER/**
+
+> 建议使用 Chrome / Edge / Safari 等现代浏览器，并保持联网（three.js 走 CDN）。
+
 ---
 
 ## 快速开始
 
-直接用浏览器打开 `index.html` 即可（需要联网加载 CDN 上的 three.js）。
+想本地运行的话，直接用浏览器打开 `index.html` 即可（同样需要联网加载 CDN 上的 three.js）。
 
 如果浏览器拦截了本地模块加载，在目录下起一个静态服务器：
 
@@ -162,7 +170,8 @@ const CFG = {
 
 ```
 SHIFT_RUNNER/
-└── index.html    # 全部内容：样式、DOM、Three.js 场景与游戏逻辑
+├── index.html    # 全部内容：样式、DOM、Three.js 场景与游戏逻辑
+└── README.md     # 本说明文档
 ```
 
-整个游戏就是一个 HTML 文件，方便直接分发或部署到任意静态托管。
+整个游戏就是一个 HTML 文件，方便直接分发或部署到任意静态托管（当前已托管在 GitHub Pages）。
