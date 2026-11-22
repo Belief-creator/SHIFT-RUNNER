@@ -171,11 +171,16 @@
     transition:opacity .34s ease,visibility .34s ease;
   }
   .overlay.hide{opacity:0;visibility:hidden;pointer-events:none;}
+  /* 主页 / 昵称页时隐藏游戏 HUD，保持画面干净 */
+  #hud{transition:opacity .28s ease;}
+  #hud.off{opacity:0;}
+  #touch{transition:opacity .28s ease;}
+  #touch.off{opacity:0;pointer-events:none;}
 
   .panel{text-align:center;padding:10px 22px;max-width:600px;}
 
   .title{
-    font-size:clamp(38px,9vw,74px);font-weight:800;letter-spacing:.12em;line-height:1;
+    font-size:clamp(32px,6.5vw,58px);font-weight:800;letter-spacing:.12em;line-height:1;
     background:linear-gradient(180deg,#ffffff,#e8f6f3 42%,var(--c1) 70%,#2f6f6b);
     -webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 0 26px rgba(87,201,193,.45));
@@ -270,6 +275,115 @@
     font-size:11px;letter-spacing:.4em;transition:opacity .5s ease;
   }
   #boot.hide{opacity:0;pointer-events:none;}
+
+  /* ============ 通用按钮 ============ */
+  .btn{
+    appearance:none;cursor:pointer;font-family:inherit;
+    padding:11px 26px;border-radius:999px;
+    font-size:12px;letter-spacing:.28em;
+    border:1px solid rgba(120,205,192,.28);
+    background:rgba(255,255,255,.04);
+    color:#dff6f2;
+    transition:transform .12s ease,background .2s ease,box-shadow .2s ease;
+  }
+  .btn:hover{background:rgba(46,211,190,.12);box-shadow:0 0 24px rgba(46,211,190,.18);}
+  .btn:active{transform:scale(.96);}
+  .btn.primary{
+    border-color:rgba(46,211,190,.45);
+    background:linear-gradient(180deg,rgba(46,211,190,.2),rgba(46,211,190,.05));
+    box-shadow:0 0 30px rgba(46,211,190,.2),inset 0 1px 0 rgba(255,255,255,.14);
+    color:#eafcff;
+  }
+  .btn.ghost{background:transparent;}
+  .btn:disabled{opacity:.32;cursor:not-allowed;box-shadow:none;}
+
+  /* ============ 昵称 ============ */
+  .name-input{
+    display:block;width:100%;margin:20px 0 14px;
+    padding:13px 18px;border-radius:14px;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(120,205,192,.22);
+    color:#eafcff;font-family:inherit;font-size:15px;letter-spacing:.08em;
+    text-align:center;outline:none;
+    transition:border-color .2s ease,box-shadow .2s ease;
+  }
+  .name-input:focus{border-color:rgba(46,211,190,.6);box-shadow:0 0 26px rgba(46,211,190,.18);}
+  .name-input::placeholder{color:rgba(160,210,205,.35);letter-spacing:.12em;}
+  .name-err{margin-top:10px;min-height:16px;font-size:11px;letter-spacing:.1em;color:#e07a72;}
+
+  /* ============ 主页 ============ */
+  .user-row{
+    display:flex;align-items:center;justify-content:center;gap:10px;margin-top:18px;
+    font-size:12px;letter-spacing:.14em;color:rgba(190,235,230,.72);
+  }
+  .link{
+    appearance:none;background:none;border:none;cursor:pointer;padding:2px 4px;
+    font-family:inherit;font-size:11px;letter-spacing:.1em;
+    color:rgba(46,211,190,.85);text-decoration:underline;text-underline-offset:3px;
+  }
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px;}
+  .mode{
+    appearance:none;cursor:pointer;text-align:left;font-family:inherit;
+    padding:16px 16px 14px;border-radius:16px;
+    background:linear-gradient(160deg,rgba(24,40,46,.62),rgba(8,12,18,.34));
+    border:1px solid rgba(120,205,192,.16);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+    transition:transform .14s ease,border-color .2s ease,box-shadow .2s ease;
+  }
+  .mode:hover{
+    transform:translateY(-2px);border-color:rgba(46,211,190,.45);
+    box-shadow:0 10px 30px rgba(0,0,0,.35),0 0 26px rgba(46,211,190,.14);
+  }
+  .mode:active{transform:scale(.985);}
+  .mode-name{font-size:14px;font-weight:700;letter-spacing:.2em;color:#eafcff;}
+  .mode-desc{margin-top:7px;font-size:10.5px;letter-spacing:.08em;color:rgba(175,215,210,.55);}
+  .mode-meta{margin-top:12px;font-size:10px;letter-spacing:.14em;color:rgba(242,190,110,.85);}
+  #openBoard{margin-top:14px;width:100%;}
+
+  /* ============ 关卡列表 ============ */
+  .levels{display:grid;gap:9px;margin:20px 0 18px;max-height:46vh;overflow:auto;}
+  .level{
+    display:flex;align-items:center;gap:14px;cursor:pointer;font-family:inherit;text-align:left;
+    padding:13px 16px;border-radius:14px;color:#eafcff;
+    background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.015));
+    border:1px solid rgba(255,255,255,.07);
+    transition:border-color .2s ease,transform .12s ease;
+  }
+  .level:hover:not(:disabled){border-color:rgba(46,211,190,.45);transform:translateX(2px);}
+  .level:disabled{opacity:.32;cursor:not-allowed;}
+  .lv-no{flex:none;width:44px;font-size:11px;letter-spacing:.18em;color:rgba(160,210,205,.6);}
+  .lv-main{flex:1;}
+  .lv-name{font-size:13px;letter-spacing:.1em;}
+  .lv-goal{margin-top:4px;font-size:10px;letter-spacing:.1em;color:rgba(175,215,210,.5);}
+  .lv-stars{margin-top:4px;font-size:10px;letter-spacing:.2em;color:#ffce7a;}
+  .lv-lock{flex:none;font-size:10px;letter-spacing:.1em;color:rgba(175,215,210,.35);}
+
+  /* ============ 排行榜 ============ */
+  .board{margin:18px 0;max-height:48vh;overflow:auto;}
+  .board-row{
+    display:grid;grid-template-columns:32px 1fr auto auto;gap:10px;align-items:center;
+    padding:10px 12px;border-radius:10px;font-size:12px;letter-spacing:.05em;
+    color:rgba(210,240,236,.82);
+  }
+  .board-row + .board-row{margin-top:4px;}
+  .board-row.head{
+    padding-bottom:4px;font-size:9px;letter-spacing:.24em;color:rgba(160,210,205,.45);
+  }
+  .board-row.me{background:rgba(46,211,190,.1);border:1px solid rgba(46,211,190,.25);}
+  .board-rank{color:#ffce7a;font-variant-numeric:tabular-nums;}
+  .board-dist{color:#eafcff;font-variant-numeric:tabular-nums;}
+  .board-pts{font-size:11px;color:rgba(255,214,150,.8);font-variant-numeric:tabular-nums;}
+  .board-empty{padding:26px 0;text-align:center;font-size:11px;letter-spacing:.2em;color:rgba(160,210,205,.4);}
+  .board-note{margin:-6px 0 14px;text-align:center;font-size:9.5px;letter-spacing:.16em;color:rgba(160,210,205,.38);}
+
+  /* ============ 结算补充 ============ */
+  .btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:22px;}
+  .over-rank{margin-top:10px;min-height:16px;font-size:11px;letter-spacing:.16em;color:#ffce7a;}
+  .stars{margin:14px 0 4px;font-size:36px;letter-spacing:.18em;color:#ffce7a;
+    text-shadow:0 0 24px rgba(255,206,122,.55);}
+  .stars .off{color:rgba(255,255,255,.12);text-shadow:none;}
+  .over-title.ok{color:#8ef0d8;text-shadow:0 0 26px rgba(46,211,190,.6);}
+  .goal-line{margin-top:5px;font-size:10px;letter-spacing:.12em;color:rgba(255,214,150,.8);}
 </style>
 </head>
 <body>
@@ -293,6 +407,7 @@
           <div class="speed-bar"><div class="speed-fill" id="speedFill"></div></div>
           <div class="speed-val"><span id="speedVal">54</span> KM/H</div>
         </div>
+        <div class="goal-line hide" id="goalLine">目标 <b id="goalVal">0</b> M</div>
         <div class="best">BEST <span id="bestVal">00000</span></div>
       </div>
     </div>
@@ -316,20 +431,70 @@
     <button id="btnGrav" class="grav" type="button">重力</button>
   </div>
 
-  <!-- ===================== 开始界面 ===================== -->
-  <div class="overlay" id="startScreen">
+  <!-- ===================== 昵称输入 ===================== -->
+  <div class="overlay" id="nameScreen">
     <div class="panel">
       <div class="title">SHIFT RUNNER</div>
       <div class="subtitle">重 力 双 轨</div>
+      <div class="user-row">先起个名字，成绩会记在你名下</div>
+      <input id="nameInput" class="name-input" maxlength="12" placeholder="输入昵称（最多 12 字）"
+             autocomplete="off" autocorrect="off" spellcheck="false" />
+      <button id="nameOk" class="btn primary" type="button">进 入</button>
+      <div class="name-err" id="nameErr"></div>
+    </div>
+  </div>
+
+  <!-- ===================== 主页 ===================== -->
+  <div class="overlay hide" id="startScreen">
+    <div class="panel">
+      <div class="title">SHIFT RUNNER</div>
+      <div class="subtitle">重 力 双 轨</div>
+      <div class="user-row">你好，<span id="helloName">玩家</span>
+        <button id="changeName" class="link" type="button">切换昵称</button>
+      </div>
+
+      <div class="modes">
+        <button class="mode" id="modeCampaign" type="button">
+          <div class="mode-name">闯 关 模 式</div>
+          <div class="mode-desc">固定关卡 · 星级挑战</div>
+          <div class="mode-meta" id="campaignMeta">已通关 0 / 5</div>
+        </button>
+        <button class="mode" id="modeEndless" type="button">
+          <div class="mode-name">无 尽 模 式</div>
+          <div class="mode-desc">速度递增 · 冲击排行榜</div>
+          <div class="mode-meta" id="endlessMeta">个人最佳 0 M</div>
+        </button>
+      </div>
+
+      <button id="openBoard" class="btn ghost" type="button">排 行 榜</button>
+
       <div class="rules">
-        <div class="rule"><i class="c1"></i><span>小球自动向前冲刺，速度会越来越快</span></div>
         <div class="rule"><i class="c2"></i><span><b>SHIFT</b> 翻转重力，在上下两层跑道间切换</span></div>
         <div class="rule"><i class="c1"></i><span><b>SPACE</b> 切换小球颜色（青 / 金）</span></div>
-        <div class="rule"><i class="c2"></i><span>越过跑道分界线、或换层落地时，小球颜色必须与所在跑道一致，否则立即失败</span></div>
-        <div class="rule"><i class="c3"></i><span>红色斜纹墙封锁一层；金色光点收集加分；亮金色加速带提速、紫色弹跳板强制换层</span></div>
-        <div class="rule"><i class="c3"></i><span>跑道上出现缺口时，那一层整段消失 —— 必须待在没有断开的层</span></div>
+        <div class="rule"><i class="c2"></i><span>越线或落地时，小球颜色必须与所在跑道一致，否则立即失败</span></div>
+        <div class="rule"><i class="c3"></i><span>避开红色斜纹墙与断裂缺口；金色光点加分，金 / 紫踏板分别加速与换层</span></div>
       </div>
-      <div class="cta">点击 / 按任意键 开始</div>
+    </div>
+  </div>
+
+  <!-- ===================== 关卡选择 ===================== -->
+  <div class="overlay hide" id="levelScreen">
+    <div class="panel">
+      <div class="over-title">闯 关 模 式</div>
+      <div class="over-reason">跑满目标距离即通关，收集光点越多星级越高</div>
+      <div class="levels" id="levelList"></div>
+      <button class="btn ghost" id="levelBack" type="button">返回主页</button>
+    </div>
+  </div>
+
+  <!-- ===================== 排行榜 ===================== -->
+  <div class="overlay hide" id="boardScreen">
+    <div class="panel">
+      <div class="over-title">无 尽 排 行 榜</div>
+      <div class="over-reason">按距离排名，距离相同看得分</div>
+      <div class="board" id="boardList"></div>
+      <div class="board-note" id="boardNote"></div>
+      <button class="btn ghost" id="boardBack" type="button">返回主页</button>
     </div>
   </div>
 
@@ -341,7 +506,27 @@
       <div class="over-score"><span id="overScore">00000</span><small>M</small></div>
       <div class="over-best">BEST <span id="overBest">00000</span></div>
       <div class="over-best">得分 <span id="overPts">0</span> · 最高连击 <span id="overCombo">0</span></div>
-      <div class="cta">按 R / 点击 重新开始</div>
+      <div class="over-rank" id="overRank"></div>
+      <div class="btns">
+        <button class="btn primary" id="btnRetry" type="button">重 开</button>
+        <button class="btn ghost" id="btnHome" type="button">返回主页</button>
+      </div>
+      <div class="cta">按 R 快速重开</div>
+    </div>
+  </div>
+
+  <!-- ===================== 关卡完成 ===================== -->
+  <div class="overlay hide" id="clearScreen">
+    <div class="panel">
+      <div class="over-title ok">关 卡 完 成</div>
+      <div class="stars" id="clearStars">★★★</div>
+      <div class="over-score"><span id="clearDist">00000</span><small>M</small></div>
+      <div class="over-best">得分 <span id="clearPts">0</span> · 最高连击 <span id="clearCombo">0</span></div>
+      <div class="btns">
+        <button class="btn primary" id="btnNext" type="button">下 一 关</button>
+        <button class="btn ghost" id="btnAgain" type="button">再 来 一 次</button>
+        <button class="btn ghost" id="btnClearHome" type="button">返回主页</button>
+      </div>
     </div>
   </div>
 
@@ -362,6 +547,9 @@
     }
   }
   </script>
+
+  <!-- 云端榜单配置（公开的 anon key，安全由数据库 RLS 保证） -->
+  <script src="config.js"></script>
 
   <script type="module">
   import * as THREE from 'three';
@@ -401,9 +589,9 @@
   scene.background = new THREE.Color(0x06070d);
   scene.fog = new THREE.Fog(0x06070d, 26, 88);   // 远处淡出，营造纵深感
 
-  const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 260);
+  const camera = new THREE.PerspectiveCamera(66, window.innerWidth / window.innerHeight, 0.1, 260);
   // 2.5D 侧视：相机在跑道侧上方，跑道向画面纵深斜向延伸
-  camera.position.set(12.8, 2.1, 10.4);
+  camera.position.set(12.2, 2.0, 10.2);
 
   /* 灯光：环境光负责基础明暗，跑道与小球的颜色主要来自自发光 */
   scene.add(new THREE.AmbientLight(0x88aaff, 0.6));
@@ -996,7 +1184,7 @@
     intro: false,
     safeCount: 6,           // 起步安全段数量（只统计小球前方）
     dispScore: -1,
-    best: Number(localStorage.getItem('shiftRunnerBest') || 0),
+    best: 0,                // 当前昵称在无尽榜里的最好距离（启动时从榜单读取）
 
     /* --- 玩法扩展 --- */
     score: 0,               // 收集得分
@@ -1005,6 +1193,12 @@
     comboTimer: 0,          // 连击剩余时间
     boostTime: 0,           // 加速带剩余时间
     stage: 1,               // 当前阶段（随距离提升，解锁新玩法）
+    overShown: false,       // 结算页是否已经弹出（弹出前禁止重开，避免误触跳过）
+
+    /* --- 模式 --- */
+    gameMode: 'endless',    // endless 无尽 / campaign 闯关
+    levelId: 0,             // 闯关模式当前关卡
+    level: null,            // 当前关卡配置
 
     /* --- 颜色判定相关 --- */
     curSeg: null,           // 当前所处赛道段（用于检测“越线”）
@@ -1080,8 +1274,6 @@
   const bestVal = $('bestVal');
   const coreDot = $('coreDot');
   const flashEl = $('flash');
-  const startScreen = $('startScreen');
-  const overScreen = $('overScreen');
   const overReason = $('overReason');
   const overScore = $('overScore');
   const overBest = $('overBest');
@@ -1097,6 +1289,301 @@
   const overCombo = $('overCombo');
 
   bestVal.textContent = String(state.best).padStart(5, '0');
+
+  /* ==========================================================
+     九之二、昵称 / 闯关关卡 / 本地排行榜
+     ========================================================== */
+  const nameScreen = $('nameScreen');
+  const nameInput = $('nameInput');
+  const nameOk = $('nameOk');
+  const nameErr = $('nameErr');
+  const helloName = $('helloName');
+  const changeName = $('changeName');
+  const modeCampaign = $('modeCampaign');
+  const modeEndless = $('modeEndless');
+  const campaignMeta = $('campaignMeta');
+  const endlessMeta = $('endlessMeta');
+  const openBoard = $('openBoard');
+  const levelScreen = $('levelScreen');
+  const levelList = $('levelList');
+  const levelBack = $('levelBack');
+  const boardScreen = $('boardScreen');
+  const boardList = $('boardList');
+  const boardNote = $('boardNote');
+  const boardBack = $('boardBack');
+  const overRank = $('overRank');
+  const clearScreen = $('clearScreen');
+  const clearStars = $('clearStars');
+  const clearDist = $('clearDist');
+  const clearPts = $('clearPts');
+  const clearCombo = $('clearCombo');
+  const goalLine = $('goalLine');
+  const goalVal = $('goalVal');
+  const btnRetry = $('btnRetry');
+  const btnHome = $('btnHome');
+  const btnNext = $('btnNext');
+  const btnAgain = $('btnAgain');
+  const btnClearHome = $('btnClearHome');
+
+  const NAME_KEY = 'sr_name';
+  const BOARD_KEY = 'sr_board';
+  const CAMP_KEY = 'sr_campaign';
+
+  /** 闯关关卡：目标距离 + 初速倍率 + 解锁的机制阶段 */
+  const LEVELS = [
+    { id: 1, name: '起跑线', target: 150, speed: 1.00, stage: 1 },
+    { id: 2, name: '双色弯道', target: 300, speed: 1.06, stage: 2 },
+    { id: 3, name: '断裂区', target: 450, speed: 1.12, stage: 3 },
+    { id: 4, name: '加速带', target: 600, speed: 1.18, stage: 4 },
+    { id: 5, name: '极限回廊', target: 800, speed: 1.24, stage: 5 },
+  ];
+
+  let playerName = (localStorage.getItem(NAME_KEY) || '').trim().slice(0, 12);
+
+  /** 转义用户输入，避免昵称里的尖括号破坏页面 */
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, (c) => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+  }
+
+  /** 读取当前昵称的闯关进度 */
+  function loadProgress() {
+    try {
+      const all = JSON.parse(localStorage.getItem(CAMP_KEY) || '{}');
+      return (all && all[playerName]) || { stars: {} };
+    } catch (e) { return { stars: {} }; }
+  }
+
+  /** 保存当前昵称的闯关进度 */
+  function saveProgress(p) {
+    let all = {};
+    try { all = JSON.parse(localStorage.getItem(CAMP_KEY) || '{}') || {}; } catch (e) { all = {}; }
+    all[playerName] = p;
+    localStorage.setItem(CAMP_KEY, JSON.stringify(all));
+  }
+
+  /** 关卡是否解锁：第一关常开，其余需要上一关已通关 */
+  function levelUnlocked(id) {
+    if (id === 1) return true;
+    const p = loadProgress();
+    return !!(p.stars && p.stars[id - 1]);
+  }
+
+  /* ---------- 排行榜数据层 ----------
+     配好 config.js → 走 Supabase 云端榜单；
+     没配或请求失败 → 自动退回本地榜单。界面代码不区分来源。 */
+  let cloudClient = null;      // Supabase 客户端
+  let boardCache = [];         // 已按昵称去重、已排序的榜单
+  let boardMode = 'local';     // 'cloud' | 'local'
+
+  /** 初始化云端客户端 */
+  async function initLeaderboard() {
+    const cfg = window.SR_CONFIG || {};
+    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) return false;
+
+    try {
+      const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+      cloudClient = mod.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+      boardMode = 'cloud';
+      return true;
+    } catch (e) {
+      console.warn('云端榜单初始化失败，已退回本地榜单', e);
+      cloudClient = null;
+      boardMode = 'local';
+      return false;
+    }
+  }
+
+  /** 读取本地榜单（未配置云端时使用） */
+  function loadLocalBoard() {
+    try {
+      const list = JSON.parse(localStorage.getItem(BOARD_KEY) || '[]');
+      return Array.isArray(list) ? list : [];
+    } catch (e) { return []; }
+  }
+
+  /** 同一昵称只保留最好的一笔，再按距离、得分排序 */
+  function dedupeBoard(list) {
+    const map = new Map();
+    for (const r of list) {
+      const cur = map.get(r.name);
+      if (!cur || r.dist > cur.dist || (r.dist === cur.dist && r.pts > cur.pts)) map.set(r.name, r);
+    }
+    return [...map.values()].sort((a, b) => b.dist - a.dist || b.pts - a.pts);
+  }
+
+  /** 拉取榜单到缓存 */
+  async function refreshBoard() {
+    if (cloudClient) {
+      const { data, error } = await cloudClient
+        .from('scores')
+        .select('name,dist,pts,combo')
+        .order('dist', { ascending: false })
+        .order('pts', { ascending: false })
+        .limit(300);
+      if (error) throw error;
+      boardCache = dedupeBoard(data || []).slice(0, 20);
+    } else {
+      boardCache = dedupeBoard(loadLocalBoard()).slice(0, 20);
+    }
+    return boardCache;
+  }
+
+  /** 当前昵称在榜单里的最好距离 */
+  function playerBest() {
+    const me = boardCache.find((r) => r.name === playerName);
+    return me ? me.dist : 0;
+  }
+
+  /**
+   * 提交一局无尽成绩。
+   * 返回：>0 名次 / -1 上传失败 / -2 已提交但没进前 20
+   */
+  async function submitRecord(dist, pts, combo) {
+    const rec = {
+      name: playerName,
+      dist: Math.max(0, Math.floor(dist)),
+      pts: Math.max(0, Math.floor(pts)),
+      combo: Math.max(0, Math.floor(combo)),
+    };
+
+    if (cloudClient) {
+      try {
+        const { error } = await cloudClient.from('scores').insert(rec);
+        if (error) throw error;
+        await refreshBoard();
+        const idx = boardCache.findIndex((r) => r.name === playerName);
+        return idx >= 0 ? idx + 1 : -2;
+      } catch (e) {
+        console.warn('成绩上传失败', e);
+        return -1;
+      }
+    }
+
+    // 本地模式：同名只保留更好的一笔
+    const list = loadLocalBoard();
+    const i = list.findIndex((r) => r.name === playerName);
+    if (i >= 0) {
+      if (rec.dist > list[i].dist || (rec.dist === list[i].dist && rec.pts > list[i].pts)) list[i] = rec;
+    } else {
+      list.push(rec);
+    }
+    list.sort((a, b) => b.dist - a.dist || b.pts - a.pts);
+    localStorage.setItem(BOARD_KEY, JSON.stringify(list.slice(0, 20)));
+
+    boardCache = dedupeBoard(list).slice(0, 20);
+    const idx = boardCache.findIndex((r) => r.name === playerName);
+    return idx >= 0 ? idx + 1 : -2;
+  }
+
+  /* 页面切换：只显示一个覆盖层，传 null 表示全部隐藏（进入游戏） */
+  const SCREENS = ['nameScreen', 'startScreen', 'levelScreen', 'boardScreen', 'overScreen', 'clearScreen'];
+  function showScreen(id) {
+    for (const s of SCREENS) {
+      document.getElementById(s).classList.toggle('hide', s !== id);
+    }
+    // 有覆盖层时收起游戏 HUD，进入游戏时（id 为 null）再显示
+    document.getElementById('hud').classList.toggle('off', !!id);
+    document.getElementById('touch').classList.toggle('off', !!id);
+  }
+
+  /** 渲染主页信息（昵称、通关数、个人最佳） */
+  function renderHome() {
+    helloName.textContent = playerName || '玩家';
+    const p = loadProgress();
+    const cleared = Object.keys(p.stars || {}).length;
+    campaignMeta.textContent = '已通关 ' + cleared + ' / ' + LEVELS.length;
+    endlessMeta.textContent = '个人最佳 ' + playerBest() + ' M';
+  }
+
+  /** 打开昵称页 */
+  function openNameScreen(prefill) {
+    nameInput.value = prefill || '';
+    nameErr.textContent = '';
+    showScreen('nameScreen');
+    setTimeout(() => nameInput.focus(), 60);
+  }
+
+  /** 提交昵称 */
+  function submitName() {
+    const v = nameInput.value.trim().replace(/\s+/g, ' ').slice(0, 12);
+    if (!v) {
+      nameErr.textContent = '昵称不能为空';
+      return;
+    }
+    playerName = v;
+    localStorage.setItem(NAME_KEY, v);
+    state.best = playerBest();
+    bestVal.textContent = String(state.best).padStart(5, '0');
+    renderHome();
+    showScreen('startScreen');
+  }
+
+  /** 渲染关卡列表 */
+  function renderLevels() {
+    const p = loadProgress();
+    levelList.innerHTML = '';
+
+    LEVELS.forEach((lv) => {
+      const unlocked = levelUnlocked(lv.id);
+      const stars = (p.stars && p.stars[lv.id]) || 0;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'level';
+      btn.disabled = !unlocked;
+      btn.innerHTML =
+        '<div class="lv-no">LV ' + lv.id + '</div>' +
+        '<div class="lv-main">' +
+          '<div class="lv-name">' + lv.name + '</div>' +
+          '<div class="lv-goal">目标 ' + lv.target + ' M</div>' +
+          (stars ? '<div class="lv-stars">' + '★'.repeat(stars) +
+            '<span style="opacity:.18">' + '★'.repeat(3 - stars) + '</span></div>' : '') +
+        '</div>' +
+        (unlocked ? '' : '<div class="lv-lock">未解锁</div>');
+
+      if (unlocked) btn.addEventListener('click', () => startGame('campaign', lv.id));
+      levelList.appendChild(btn);
+    });
+  }
+
+  /** 渲染排行榜（前 10 名） */
+  async function renderBoard() {
+    boardList.innerHTML = '<div class="board-empty">加载中…</div>';
+    boardNote.textContent = boardMode === 'cloud' ? '数据来源：云端 Supabase' : '数据来源：本地浏览器';
+
+    try {
+      await refreshBoard();
+    } catch (e) {
+      console.warn('榜单拉取失败，展示缓存', e);
+      boardNote.textContent = '榜单拉取失败 · 展示本地缓存';
+    }
+
+    const list = boardCache;
+    boardList.innerHTML = '';
+
+    if (!list.length) {
+      boardList.innerHTML = '<div class="board-empty">还没有记录，去跑一局吧</div>';
+      return;
+    }
+
+    const head = document.createElement('div');
+    head.className = 'board-row head';
+    head.innerHTML = '<div>#</div><div>玩家</div><div>距离</div><div>得分</div>';
+    boardList.appendChild(head);
+
+    list.slice(0, 10).forEach((r, i) => {
+      const row = document.createElement('div');
+      row.className = 'board-row' + (r.name === playerName ? ' me' : '');
+      row.innerHTML =
+        '<div class="board-rank">' + (i + 1) + '</div>' +
+        '<div>' + esc(r.name) + '</div>' +
+        '<div class="board-dist">' + r.dist + ' M</div>' +
+        '<div class="board-pts">' + (r.pts || 0) + '</div>';
+      boardList.appendChild(row);
+    });
+  }
 
   /* ==========================================================
      十一、核心动作
@@ -1237,7 +1724,6 @@
     state.comboMax = 0;
     state.comboTimer = 0;
     state.boostTime = 0;
-    state.stage = 1;
     warnEl.classList.remove('on');
     stageEl.classList.remove('on');
     comboEl.classList.remove('on');
@@ -1267,34 +1753,118 @@
     ptsVal.textContent = '0';
     speedVal.textContent = String(Math.round(CFG.baseSpeed * 3.6));
     speedFill.style.width = '6%';
+
+    // 闯关模式在 HUD 上显示目标距离
+    if (state.level) {
+      goalLine.classList.remove('hide');
+      goalVal.textContent = String(state.level.target);
+    } else {
+      goalLine.classList.add('hide');
+    }
   }
 
-  /** 开始游戏 */
-  function startGame() {
+  /** 开始一局：gameMode = 'endless' 无尽 / 'campaign' 闯关 */
+  function startGame(gameMode, levelId) {
     audioInit();
+
+    state.gameMode = gameMode === 'campaign' ? 'campaign' : 'endless';
+    state.level = state.gameMode === 'campaign'
+      ? (LEVELS.find((l) => l.id === levelId) || LEVELS[0])
+      : null;
+    state.levelId = state.level ? state.level.id : 0;
+    state.stage = state.level ? state.level.stage : 1;   // 闯关按关卡解锁机制
+    state.best = playerBest();
+
     resetGame();
     state.mode = 'playing';
+    state.overShown = false;
+
     clearTimeout(overTimer);      // 取消上一局还没弹出的结算页
-    startScreen.classList.add('hide');
-    overScreen.classList.add('hide');
+    clearTimeout(clearTimer);
+    overRank.textContent = '';
+    bestVal.textContent = String(state.best).padStart(5, '0');
+    showScreen(null);             // 隐藏所有覆盖层
   }
 
-  let overTimer = 0;   // 结算页延时弹出的定时器
+  let overTimer = 0;    // 结算页延时弹出的定时器
+  let clearTimer = 0;   // 关卡完成页延时弹出的定时器
+
+  /** 闯关通关：结算星级、解锁下一关 */
+  function winLevel() {
+    if (state.mode !== 'playing' || !state.level) return;
+    state.mode = 'dead';        // 借用死亡态停住世界，但不弹 GAME OVER
+    state.overShown = false;
+
+    const lv = state.level;
+    const dist = Math.floor(state.distance);
+    // 星级只看收集得分：通关 1 星，得分达标 2 / 3 星
+    const stars = state.score >= lv.target * 0.9 ? 3 : (state.score >= lv.target * 0.5 ? 2 : 1);
+
+    const p = loadProgress();
+    p.stars = p.stars || {};
+    p.stars[lv.id] = Math.max(p.stars[lv.id] || 0, stars);
+    saveProgress(p);
+
+    if (dist > state.best) state.best = dist;
+
+    const next = LEVELS.find((l) => l.id === lv.id + 1);
+    btnNext.disabled = !next;
+    btnNext.textContent = next ? '下 一 关' : '已 全 部 通 关';
+
+    clearDist.textContent = String(dist).padStart(5, '0');
+    clearPts.textContent = String(state.score);
+    clearCombo.textContent = String(state.comboMax);
+    clearStars.innerHTML = '★'.repeat(stars) +
+      '<span class="off">' + '★'.repeat(3 - stars) + '</span>';
+
+    tone(660, 0.12, 'triangle', 0.05, 990);
+    setTimeout(() => tone(990, 0.18, 'triangle', 0.05, 1320), 120);
+
+    clearTimeout(clearTimer);
+    clearTimer = setTimeout(() => {
+      if (state.mode !== 'dead' || state.gameMode !== 'campaign') return;
+      state.overShown = true;
+      showScreen('clearScreen');
+    }, 520);
+  }
+
+  /** 回到主页（保留昵称与进度） */
+  function goHome() {
+    clearTimeout(overTimer);
+    clearTimeout(clearTimer);
+
+    state.mode = 'ready';
+    state.gameMode = 'endless';
+    state.level = null;
+    state.levelId = 0;
+    state.stage = 1;
+    state.best = playerBest();
+
+    resetGame();
+    bestVal.textContent = String(state.best).padStart(5, '0');
+    overRank.textContent = '';
+    renderHome();
+    showScreen('startScreen');
+  }
 
   /** 失败 */
   function die(reason) {
     if (state.mode !== 'playing') return;
     state.mode = 'dead';
+    state.overShown = false;   // 结算页弹出前不允许重开
     state.shake = 1;
     state.squash = 1;
     state.squashVel = 0;
     warnEl.classList.remove('on');
 
     const score = Math.floor(state.distance);
-    if (score > state.best) {
-      state.best = score;
-      localStorage.setItem('shiftRunnerBest', String(score));
-    }
+    if (score > state.best) state.best = score;
+
+    // 只有无尽模式进排行榜；闯关模式只记通关进度
+    // 上传是异步的，先把 Promise 拿到手，等结算页弹出后再把名次填进去
+    const recordPromise = state.gameMode === 'endless'
+      ? submitRecord(score, state.score, state.comboMax)
+      : Promise.resolve(0);
 
     sfxCrash();
     flashEl.classList.add('on');
@@ -1312,14 +1882,26 @@
       overPts.textContent = String(state.score);
       overCombo.textContent = String(state.comboMax);
       bestVal.textContent = String(state.best).padStart(5, '0');
-      overScreen.classList.remove('hide');
+      state.overShown = true;
+      showScreen('overScreen');
+
+      // 成绩上传结果异步回填，不阻塞结算页
+      overRank.textContent = state.gameMode === 'endless' ? '成绩上传中…' : '闯关模式不进入排行榜';
+      if (state.gameMode === 'endless') {
+        recordPromise.then((rank) => {
+          if (rank > 0) overRank.textContent = '本次排名 第 ' + rank + ' 名';
+          else if (rank === -2) overRank.textContent = '已提交，未进入前 20 名';
+          else if (rank === -1) overRank.textContent = '成绩上传失败，请检查网络';
+          else overRank.textContent = '';
+        }).catch(() => { overRank.textContent = '成绩上传失败'; });
+      }
     }, 620);
   }
 
-  /** 重新开始（仅在死亡界面可用） */
+  /** 重新开始（仅在结算页出现后可用） */
   function restartGame() {
-    if (state.mode !== 'dead') return;
-    startGame();
+    if (state.mode !== 'dead' || !state.overShown) return;
+    startGame(state.gameMode, state.levelId);
   }
 
   /* ==========================================================
@@ -1331,7 +1913,9 @@
     /* --- 1. 速度与距离 --- */
     if (playing) {
       state.time += dt;
-      state.speed = Math.min(CFG.maxSpeed, CFG.baseSpeed + CFG.accel * state.time);
+      // 闯关模式按关卡给一个速度倍率
+      const mul = state.level ? state.level.speed : 1;
+      state.speed = Math.min(CFG.maxSpeed * mul, (CFG.baseSpeed + CFG.accel * state.time) * mul);
       if (state.boostTime > 0) state.boostTime -= dt;
     }
 
@@ -1341,11 +1925,17 @@
     if (playing) {
       state.distance += spd * dt;
 
-      // 每 400 米进入新阶段，解锁新的玩法元素
-      const st = Math.min(5, 1 + Math.floor(state.distance / 400));
-      if (st !== state.stage) {
-        state.stage = st;
-        showStage(st);
+      if (state.gameMode === 'endless') {
+        // 每 400 米进入新阶段，解锁新的玩法元素
+        const st = Math.min(5, 1 + Math.floor(state.distance / 400));
+        if (st !== state.stage) {
+          state.stage = st;
+          showStage(st);
+        }
+      } else if (state.level && state.distance >= state.level.target) {
+        // 闯关模式跑满目标距离即通关
+        winLevel();
+        return;
       }
     }
 
@@ -1510,16 +2100,16 @@
     }
 
     /* --- 5. 相机跟随 + 震动 + 速度感（FOV） --- */
-    const camTargetY = 2.1 + state.ballY * 0.1;
+    const camTargetY = 2.0 + state.ballY * 0.1;
     camera.position.y += (camTargetY - camera.position.y) * Math.min(1, dt * 5);
 
     const shake = state.shake;
     state.shake *= Math.pow(0.02, dt);
-    camera.position.x = 12.8 + (Math.random() - 0.5) * shake * 0.55;
+    camera.position.x = 12.2 + (Math.random() - 0.5) * shake * 0.55;
     camera.position.y += (Math.random() - 0.5) * shake * 0.45;
-    camera.lookAt(0, -0.25 + state.ballY * 0.12, -12);
+    camera.lookAt(-0.9, -0.3 + state.ballY * 0.12, -11.5);
 
-    const fovTarget = 70 + (state.speed - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed) * 9;
+    const fovTarget = 66 + (state.speed - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed) * 9;
     if (Math.abs(camera.fov - fovTarget) > 0.02) {
       camera.fov += (fovTarget - camera.fov) * Math.min(1, dt * 3);
       camera.updateProjectionMatrix();
@@ -1540,20 +2130,25 @@
      十四、输入
      ========================================================== */
   window.addEventListener('keydown', (e) => {
+    // 正在输入昵称时，键盘只服务于输入框
+    if (document.activeElement === nameInput) {
+      if (e.code === 'Enter') submitName();
+      return;
+    }
+
     // 阻止空格 / Shift 触发页面滚动等默认行为
     if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
       e.preventDefault();
     }
     if (e.repeat) return;
 
-    // 标题界面：任意键开始
-    if (state.mode === 'ready') {
-      startGame();
-      return;
-    }
-    // 死亡界面：R / 空格 / 回车重开
+    // 主页 / 关卡页 / 排行榜：交给按钮处理，键盘不接管
+    if (state.mode === 'ready') return;
+
+    // 结算页：R 重开，Esc 回主页
     if (state.mode === 'dead') {
-      if (e.code === 'KeyR' || e.code === 'Space' || e.code === 'Enter') restartGame();
+      if (e.code === 'KeyR') restartGame();
+      else if (e.code === 'Escape') goHome();
       return;
     }
 
@@ -1567,27 +2162,45 @@
     }
   });
 
-  // 鼠标 / 触摸点按覆盖层
-  startScreen.addEventListener('pointerdown', () => {
-    if (state.mode === 'ready') startGame();
+  /* --- 主页按钮 --- */
+  modeEndless.addEventListener('click', () => startGame('endless'));
+  modeCampaign.addEventListener('click', () => {
+    renderLevels();
+    showScreen('levelScreen');
   });
-  overScreen.addEventListener('pointerdown', () => restartGame());
+  openBoard.addEventListener('click', () => {
+    renderBoard();
+    showScreen('boardScreen');
+  });
+  levelBack.addEventListener('click', () => {
+    renderHome();
+    showScreen('startScreen');
+  });
+  boardBack.addEventListener('click', () => {
+    renderHome();
+    showScreen('startScreen');
+  });
+  changeName.addEventListener('click', () => openNameScreen(playerName));
+  nameOk.addEventListener('click', submitName);
 
-  // 结算页有 0.62 秒的弹出延迟，这段时间内点击任意位置也直接重开
-  window.addEventListener('pointerdown', () => {
-    if (state.mode === 'dead') restartGame();
+  /* --- 结算按钮 --- */
+  btnRetry.addEventListener('click', restartGame);
+  btnHome.addEventListener('click', goHome);
+  btnAgain.addEventListener('click', () => startGame('campaign', state.levelId));
+  btnClearHome.addEventListener('click', goHome);
+  btnNext.addEventListener('click', () => {
+    const next = LEVELS.find((l) => l.id === state.levelId + 1);
+    if (next) startGame('campaign', next.id);
   });
 
-  // 移动端按钮
+  // 移动端按钮（仅在游戏进行中生效）
   $('btnColor').addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    if (state.mode === 'ready') startGame();
-    else toggleColor();
+    toggleColor();
   });
   $('btnGrav').addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    if (state.mode === 'ready') startGame();
-    else flipGravity();
+    flipGravity();
   });
 
   // 阻止右键菜单与长按选择
@@ -1621,7 +2234,30 @@
   /* ==========================================================
      十七、启动
      ========================================================== */
+  state.mode = 'ready';
   resetGame();
+  state.best = playerBest();
+  bestVal.textContent = String(state.best).padStart(5, '0');
+
+  // 有昵称直接进主页，否则先让玩家起名字
+  if (playerName) {
+    renderHome();
+    showScreen('startScreen');
+  } else {
+    showScreen('nameScreen');
+    setTimeout(() => nameInput.focus(), 350);
+  }
+
+  // 异步初始化云端榜单：没配 config.js 会自动走本地榜单
+  initLeaderboard()
+    .then(() => refreshBoard())
+    .catch(() => {})
+    .then(() => {
+      state.best = playerBest();
+      bestVal.textContent = String(state.best).padStart(5, '0');
+      if (state.mode === 'ready') renderHome();
+    });
+
   requestAnimationFrame(loop);
 
   // 关闭加载提示
