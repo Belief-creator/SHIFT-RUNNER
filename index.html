@@ -47,7 +47,9 @@
   /* ===================== HUD ===================== */
   #hud{
     position:fixed;inset:0;z-index:5;pointer-events:none;
-    padding:22px 26px 24px;display:flex;flex-direction:column;justify-content:space-between;
+    /* 加上安全区偏移，避开手机刘海 / 圆角 / 横屏时的侧边遮挡 */
+    padding:calc(22px + env(safe-area-inset-top)) calc(26px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(26px + env(safe-area-inset-left));
+    display:flex;flex-direction:column;justify-content:space-between;
   }
   .hud-top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;}
   .stat{
@@ -266,6 +268,25 @@
   @media (pointer:coarse){
     #touch{display:flex;}
     .hud-bottom{display:none;}
+  }
+
+  /* 手机窄屏：整体收紧 HUD，避免右侧信息卡超出屏幕被裁切 */
+  @media (max-width: 560px){
+    #hud{
+      padding:calc(10px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) 14px calc(10px + env(safe-area-inset-left));
+    }
+    .hud-top{gap:8px;}
+    .stat{padding:9px 11px 10px;border-radius:13px;}
+    .score{font-size:30px;}
+    .score small{font-size:10px;margin-left:5px;letter-spacing:.2em;}
+    .label{font-size:8px;letter-spacing:.22em;}
+    .core{padding:4px 8px 4px 7px;font-size:9px;gap:6px;letter-spacing:.12em;}
+    .pts{margin-top:7px;font-size:8px;letter-spacing:.14em;}
+    .pts b{font-size:11px;}
+    .speed-wrap{gap:6px;}
+    .speed-bar{width:104px;height:6px;}
+    .speed-val,.best{font-size:9.5px;letter-spacing:.12em;}
+    .goal-line{font-size:9px;}
   }
 
   /* 加载提示 */
