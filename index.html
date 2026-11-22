@@ -1376,21 +1376,32 @@
   let cloudClient = null;      // Supabase 客户端
   let boardCache = [];         // 已按昵称去重、已排序的榜单
   let boardMode = 'local';     // 'cloud' | 'local'
+  let cloudError = '';         // 云端不可用的原因（展示在榜单底部，便于排查）
 
   /** 初始化云端客户端 */
   async function initLeaderboard() {
     const cfg = window.SR_CONFIG || {};
-    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) return false;
+    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
+      cloudError = 'config.js 未填写';
+      return false;
+    }
 
     try {
       const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
       cloudClient = mod.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+
+      // 先试查一次，把 URL / key / 建表 问题提前暴露出来
+      const { error } = await cloudClient.from('scores').select('id').limit(1);
+      if (error) throw error;
+
       boardMode = 'cloud';
+      cloudError = '';
       return true;
     } catch (e) {
-      console.warn('云端榜单初始化失败，已退回本地榜单', e);
+      console.warn('云端榜单不可用，已退回本地榜：', e);
       cloudClient = null;
       boardMode = 'local';
+      cloudError = (e && (e.message || e.error_description)) || '连接失败';
       return false;
     }
   }
@@ -1551,7 +1562,9 @@
   /** 渲染排行榜（前 10 名） */
   async function renderBoard() {
     boardList.innerHTML = '<div class="board-empty">加载中…</div>';
-    boardNote.textContent = boardMode === 'cloud' ? '数据来源：云端 Supabase' : '数据来源：本地浏览器';
+    boardNote.textContent = boardMode === 'cloud'
+      ? '数据来源：云端 Supabase'
+      : ('本地榜单' + (cloudError ? ' · 云端不可用：' + cloudError : ''));
 
     try {
       await refreshBoard();

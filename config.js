@@ -26,6 +26,6 @@
    ========================================================================== */
 
 window.SR_CONFIG = {
-  supabaseUrl: '',
-  supabaseAnonKey: '',
+  supabaseUrl: 'https://kagueyxbjfbnfccwsyik.supabase.co',
+  supabaseAnonKey: 'sb_publishable_6ZG6ULBLWAQa9I9nZ7LlmQ_1gk-fqU-',
 };
