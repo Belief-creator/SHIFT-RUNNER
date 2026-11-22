@@ -1099,13 +1099,12 @@
       else s.barrierTop = true;
     }
 
-    // 断裂缺口：第二阶段解锁，整层跑道消失（不与障碍墙同层）
-    if (armed && stage >= 2 && Math.random() < 0.2) {
-      if (Math.random() < 0.5) {
-        if (!s.barrierBottom) s.holeBottom = true;
-      } else if (!s.barrierTop) {
-        s.holeTop = true;
-      }
+    // 断裂缺口：第二阶段解锁，整层跑道消失
+    // ⚠️ 必须与障碍墙互斥：每段最多封锁一层，否则会出现
+    //    「上层是墙、下层断裂」这种两层全封的无解局面（必死）。
+    if (armed && stage >= 2 && !s.barrierBottom && !s.barrierTop && Math.random() < 0.2) {
+      if (Math.random() < 0.5) s.holeBottom = true;
+      else s.holeTop = true;
     }
 
     const blockedBottom = s.barrierBottom || s.holeBottom;   // 该层本段不可通行
