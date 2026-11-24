@@ -592,6 +592,11 @@
   <script type="module">
   import * as THREE from 'three';
 
+  // 页面加载瞬间先记下 URL hash：Supabase 的 getSession 会消费并清掉 recovery 令牌，
+  // 之后再读 window.location.hash 就读不到了，所以必须在最开始存一份，
+  // 用于判断本次是否从「忘记密码」邮件的重置链接进入
+  const pageLoadHash = window.location.hash;
+
   /* ==========================================================
      一、全局配置
      ========================================================== */
@@ -1604,6 +1609,7 @@
   /* ---------- 账号：邮箱 + 密码（Supabase Auth） ---------- */
   let authSession = null;          // 当前登录会话；本地模式下始终为 null
   let authMode = 'login';          // 'login' 登录 | 'register' 注册
+  let recoveryPending = false;     // 是否刚从「忘记密码」邮件链接进入，等待设置新密码
 
   /** 切换登录 / 注册 / 忘记密码 / 设置新密码 四种界面状态 */
   function setAuthMode(m) {
@@ -1692,6 +1698,7 @@
       try {
         const { error } = await cloudClient.auth.updateUser({ password: p });
         if (error) throw error;
+        recoveryPending = false;
         // 清掉 URL 里的 recovery 令牌，避免刷新重复触发
         history.replaceState(null, '', window.location.pathname);
         afterLogin(authSession.user);
@@ -2545,24 +2552,34 @@
   initLeaderboard()
     .then(async () => {
       if (!cloudClient) return;
+      // 先挂监听再取会话：从重置邮件链接进入时，getSession 会消费 URL 里的
+      // recovery 令牌并触发 PASSWORD_RECOVERY 事件，必须在此之前挂上监听才不会漏
+      cloudClient.auth.onAuthStateChange((evt, s) => {
+        authSession = s || null;
+        if (evt === 'PASSWORD_RECOVERY') {
+          recoveryPending = true;
+          showScreen('nameScreen');
+          setAuthMode('resetConfirm');
+        }
+      });
       // 恢复上次登录会话（Supabase 会自己存在 localStorage 里）
       const { data } = await cloudClient.auth.getSession();
       authSession = (data && data.session) || null;
-      // 会话刷新时同步本地变量
-      cloudClient.auth.onAuthStateChange((_evt, s) => { authSession = s || null; });
     })
     .catch(() => {})
     .then(() => refreshBoard().catch(() => {}))
     .then(() => {
       state.best = playerBest();
       bestVal.textContent = String(state.best).padStart(5, '0');
+      // 从「忘记密码」邮件链接进入：强制先设置新密码，不进主页
+      // recoveryPending 来自 PASSWORD_RECOVERY 事件；pageLoadHash 是页面加载瞬间存的 URL，
+      // 因为 getSession 会把 recovery 令牌从 URL 清掉，必须用加载时的快照判断
+      if (recoveryPending || /type=recovery/.test(pageLoadHash)) {
+        showScreen('nameScreen');
+        setAuthMode('resetConfirm');
+        return;
+      }
       if (authSession) {
-        // 从密码重置邮件点链接进入：URL 带 recovery 令牌，强制先设置新密码
-        if (/type=recovery/.test(window.location.hash)) {
-          showScreen('nameScreen');
-          setAuthMode('resetConfirm');
-          return;
-        }
         // 已登录：直接用账号里的昵称进主页
         const meta = authSession.user.user_metadata || {};
         playerName = String(meta.display_name || authSession.user.email || playerName).slice(0, 12);
