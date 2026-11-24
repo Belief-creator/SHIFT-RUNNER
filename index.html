@@ -1179,12 +1179,11 @@
     s.seamTop = !!nearer && nearer.colorTop !== s.colorTop;
 
     // 每段重新规划玩法元素
+    // 注意：seamBottom / seamTop 已在上方按相邻段颜色算好，这里不能再重置，否则交界线永远不亮
     s.barrierBottom = false;
     s.barrierTop = false;
     s.holeBottom = false;
     s.holeTop = false;
-    s.seamBottom = false;
-    s.seamTop = false;
     s.padLane = -1;
     s.padHit = false;
     s.orbLane[0] = -1;
@@ -1195,17 +1194,35 @@
     const stage = state.stage;
     const armed = !safe && state.time > 2.5;   // 开局 2.5 秒内不刷任何玩法元素
 
-    // 障碍墙：封锁一层
+    // 上一段是玩家先经过的一段（更靠近玩家），它可能因障碍 / 断裂把玩家逼到某一层，
+    // 或因弹跳板强制换到对侧层。forcedLane 记录玩家进入本段时“只能待在”的层：
+    //   -1 = 上一段未强制，玩家可选层；0 = 被迫在底层；1 = 被迫在顶层。
+    // 本段若在 forcedLane 放障碍墙或断裂口，玩家刚落地就被封死 → 必死。
+    // 因此本段所有“封层”操作都必须避开 forcedLane，保证始终留有一条可通行跑道。
+    const prev = segments[segments.length - 1];
+    let forcedLane = -1;
+    if (prev) {
+      if (prev.holeBottom || prev.barrierBottom) forcedLane = 1;
+      else if (prev.holeTop || prev.barrierTop) forcedLane = 0;
+      else if (prev.padLane >= 0 && prev.padType === 'jump') forcedLane = 1 - prev.padLane;
+    }
+
+    // 障碍墙：封锁一层，但不得封玩家被上一段逼到的层
     if (armed && Math.random() < 0.42) {
-      if (Math.random() < 0.5) s.barrierBottom = true;
+      let lane = Math.random() < 0.5 ? 0 : 1;
+      if (lane === forcedLane) lane = 1 - lane;
+      if (lane === 0) s.barrierBottom = true;
       else s.barrierTop = true;
     }
 
     // 断裂缺口：第二阶段解锁，整层跑道消失
-    // ⚠️ 必须与障碍墙互斥：每段最多封锁一层，否则会出现
-    //    「上层是墙、下层断裂」这种两层全封的无解局面（必死）。
+    // ⚠️ 互斥 1：本段不得与障碍墙同时出现（单段最多封一层，避免两层全封）。
+    // ⚠️ 互斥 2：断裂口不得落在 forcedLane，否则形成「上一段逼你切层 → 本段那层又断」
+    //          的无反应空间连击（玩家视角即“上面断裂、下面也没有跑道”）。
     if (armed && stage >= 2 && !s.barrierBottom && !s.barrierTop && Math.random() < 0.2) {
-      if (Math.random() < 0.5) s.holeBottom = true;
+      let lane = Math.random() < 0.5 ? 0 : 1;
+      if (lane === forcedLane) lane = 1 - lane;   // 换到另一层，避开被迫层
+      if (lane === 0) s.holeBottom = true;
       else s.holeTop = true;
     }
 
@@ -1213,9 +1230,11 @@
     const blockedTop = s.barrierTop || s.holeTop;
 
     // 加速带 / 弹跳板：第三阶段解锁
+    // 弹跳板会强制换层，只有“两层都可通行”时才允许出现，否则会把玩家弹进障碍 / 裂口。
     if (armed && stage >= 3 && !(blockedBottom && blockedTop) && Math.random() < 0.22) {
       s.padLane = blockedBottom ? 1 : (blockedTop ? 0 : (Math.random() < 0.5 ? 0 : 1));
-      s.padType = stage >= 4 && Math.random() < 0.5 ? 'jump' : 'boost';
+      const bothClear = !blockedBottom && !blockedTop;
+      s.padType = (stage >= 4 && bothClear && Math.random() < 0.5) ? 'jump' : 'boost';
       s.padZ = (Math.random() * 0.5 - 0.2) * len;
     }
 
