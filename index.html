@@ -167,7 +167,13 @@
 
   /* ===================== 覆盖层（开始 / 结束） ===================== */
   .overlay{
-    position:fixed;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;
+    position:fixed;inset:0;z-index:8;display:flex;
+    /* 内容超出视口时允许纵向滚动：横屏矮屏下主页/结算页内容会超过屏幕高度 */
+    overflow-y:auto;overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;          /* iOS 平滑滚动 */
+    touch-action:pan-y;                         /* 覆盖 body 的 touch-action:none，允许纵向触摸滚动 */
+    /* 避开刘海、圆角与底部手势条，防止内容贴边被系统 UI 遮挡 */
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     background:radial-gradient(ellipse at center, rgba(4,8,18,.5), rgba(2,4,10,.93));
     backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
     transition:opacity .34s ease,visibility .34s ease;
@@ -179,7 +185,12 @@
   #touch{transition:opacity .28s ease;}
   #touch.off{opacity:0;pointer-events:none;}
 
-  .panel{text-align:center;padding:10px 22px;max-width:600px;}
+  .panel{
+    text-align:center;padding:10px 22px;max-width:600px;width:100%;
+    /* flex 容器内居中：未溢出时水平垂直居中；内容溢出视口时 margin 自动归零，
+       面板从顶部开始排布，配合 .overlay 的 overflow-y:auto 可完整滚动查看 */
+    margin:auto;
+  }
 
   .title{
     font-size:clamp(32px,6.5vw,58px);font-weight:800;letter-spacing:.12em;line-height:1;
@@ -287,6 +298,25 @@
     .speed-bar{width:104px;height:6px;}
     .speed-val,.best{font-size:9.5px;letter-spacing:.12em;}
     .goal-line{font-size:9px;}
+  }
+
+  /* 横屏矮屏：压缩主页 / 结算页垂直间距，尽量让内容一屏可见，减少滚动 */
+  @media (orientation:landscape) and (max-height:520px){
+    .panel{padding:6px 16px;}
+    .title{font-size:clamp(24px,5vw,38px);}
+    .subtitle{margin-top:7px;font-size:10px;letter-spacing:.4em;}
+    .user-row{margin-top:10px;font-size:11px;}
+    .modes{margin-top:14px;gap:10px;}
+    .mode{padding:11px 13px;}
+    .mode-name{font-size:13px;}
+    .mode-desc{margin-top:5px;font-size:10px;}
+    .mode-meta{margin-top:8px;font-size:9.5px;}
+    #openBoard{margin-top:10px;padding:8px 22px;font-size:11px;}
+    .rules{margin:14px auto 0;gap:6px;max-width:540px;}
+    .rule{padding:6px 11px;font-size:11px;line-height:1.5;}
+    .over-title{font-size:clamp(26px,6vw,44px);}
+    .over-reason{margin-top:10px;font-size:10px;}
+    .over-score{margin-top:14px;padding:8px 24px 12px;font-size:38px;}
   }
 
   /* 加载提示 */
