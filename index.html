@@ -330,6 +330,10 @@
   }
   .name-input:focus{border-color:rgba(46,211,190,.6);box-shadow:0 0 26px rgba(46,211,190,.18);}
   .name-input::placeholder{color:rgba(160,210,205,.35);letter-spacing:.12em;}
+  /* 登录页有多个输入框：压缩相邻间距；hidden 时要真正隐藏（否则被 display:block 覆盖） */
+  .name-input + .name-input{margin-top:10px;}
+  .name-input[hidden]{display:none;}
+  .auth-swap{margin-top:14px;}
   .name-err{margin-top:10px;min-height:16px;font-size:11px;letter-spacing:.1em;color:#e07a72;}
 
   /* ============ 主页 ============ */
@@ -452,16 +456,26 @@
     <button id="btnGrav" class="grav" type="button">重力</button>
   </div>
 
-  <!-- ===================== 昵称输入 ===================== -->
+  <!-- ===================== 登录 / 注册 ===================== -->
   <div class="overlay" id="nameScreen">
     <div class="panel">
       <div class="title">SHIFT RUNNER</div>
       <div class="subtitle">重 力 双 轨</div>
-      <div class="user-row">先起个名字，成绩会记在你名下</div>
-      <input id="nameInput" class="name-input" maxlength="12" placeholder="输入昵称（最多 12 字）"
-             autocomplete="off" autocorrect="off" spellcheck="false" />
-      <button id="nameOk" class="btn primary" type="button">进 入</button>
-      <div class="name-err" id="nameErr"></div>
+      <div class="user-row" id="authHint">登录后成绩才会记在你自己名下</div>
+
+      <!-- 昵称只在注册时需要填写 -->
+      <input id="authName" class="name-input" maxlength="12" placeholder="昵称（最多 12 字，别人会看到）"
+             autocomplete="nickname" autocorrect="off" spellcheck="false" hidden />
+      <input id="authEmail" class="name-input" type="email" placeholder="邮箱"
+             autocomplete="username" autocorrect="off" spellcheck="false" />
+      <input id="authPass" class="name-input" type="password" placeholder="密码（至少 6 位）"
+             autocomplete="current-password" />
+
+      <div class="btns">
+        <button id="authGo" class="btn primary" type="button" disabled>登 录</button>
+      </div>
+      <button id="authSwap" class="link auth-swap" type="button">还没有账号？去注册</button>
+      <div class="name-err" id="authErr"></div>
     </div>
   </div>
 
@@ -471,7 +485,7 @@
       <div class="title">SHIFT RUNNER</div>
       <div class="subtitle">重 力 双 轨</div>
       <div class="user-row">你好，<span id="helloName">玩家</span>
-        <button id="changeName" class="link" type="button">切换昵称</button>
+        <button id="changeName" class="link" type="button">退出登录</button>
       </div>
 
       <div class="modes">
@@ -582,9 +596,9 @@
     halfW: 3.6,        // 隧道半宽（跑道宽度 = 7.2）
     halfH: 3.0,        // 隧道半高（上下两层跑道相距 6）
     ballR: 0.9,        // 小球半径
-    baseSpeed: 15,     // 初始前进速度（单位/秒）
-    maxSpeed: 40,      // 最高速度
-    accel: 0.95,       // 每秒加速量
+    baseSpeed: 12,     // 初始前进速度（单位/秒）——下调后开局更从容
+    maxSpeed: 30,      // 最高速度（原来 40，接近上限时太快难以反应）
+    accel: 0.62,       // 每秒加速量（原来 0.95，加速更平缓）
     barrierH: 1.85,    // 障碍墙高度
     visibleZ: -82,     // 跑道向前生成到多远
     cullZ: 16,         // 超过该 z 的赛道段回收
@@ -946,15 +960,22 @@
     bHoleMark.visible = false;
     tHoleMark.visible = false;
 
+    // 颜色分界线：段与段颜色不同的位置，贴一条亮色横条，方便远距离辨认
+    const bSeam = new THREE.Mesh(GEO.unit, edgeMats[0]);
+    const tSeam = new THREE.Mesh(GEO.unit, edgeMats[0]);
+    bSeam.visible = false;
+    tSeam.visible = false;
+
     group.add(bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR,
-      orbA, orbB, bPad, tPad, bHoleMark, tHoleMark);
+      orbA, orbB, bPad, tPad, bHoleMark, tHoleMark, bSeam, tSeam);
     scene.add(group);
 
     return {
       group, bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR,
-      bPad, tPad, bHoleMark, tHoleMark, orbNodes: [orbA, orbB],
+      bPad, tPad, bHoleMark, tHoleMark, bSeam, tSeam, orbNodes: [orbA, orbB],
       far: 0, near: 0, len: 0,
       colorBottom: 0, colorTop: 0,
+      seamBottom: false, seamTop: false,
       barrierBottom: false, barrierTop: false,
       holeBottom: false, holeTop: false,
       padLane: -1, padType: 'boost', padZ: 0, padHit: false,
@@ -1047,6 +1068,21 @@
       s.tHoleMark.position.set(0, SURFACE_Y - 0.16, len / 2 - 0.3);
     }
 
+    // --- 颜色分界线：贴在段近端、略高于跑道面的亮色横条 ---
+    s.bSeam.visible = s.seamBottom;
+    if (s.seamBottom) {
+      s.bSeam.material = edgeMats[s.colorBottom];
+      s.bSeam.scale.set(W, 0.12, 0.26);
+      s.bSeam.position.set(0, -SURFACE_Y + 0.06, len / 2 - 0.13);
+    }
+
+    s.tSeam.visible = s.seamTop;
+    if (s.seamTop) {
+      s.tSeam.material = edgeMats[s.colorTop];
+      s.tSeam.scale.set(W, 0.12, 0.26);
+      s.tSeam.position.set(0, SURFACE_Y - 0.06, len / 2 - 0.13);
+    }
+
     // --- 加速带 / 弹跳板：贴在跑道面上的发光踏板 ---
     const padMatNow = s.padType === 'jump' ? jumpMat : boostMat;
     s.bPad.visible = s.padLane === 0;
@@ -1099,11 +1135,18 @@
     s.colorBottom = safe ? 0 : (Math.random() < 0.5 ? 0 : 1);
     s.colorTop = safe ? 0 : (Math.random() < 0.5 ? 0 : 1);
 
+    // 颜色分界线：与「更靠近玩家的一段」比较，同层颜色不同才亮出分隔条
+    const nearer = segments.find((o) => Math.abs(o.far - near) < 0.01);
+    s.seamBottom = !!nearer && nearer.colorBottom !== s.colorBottom;
+    s.seamTop = !!nearer && nearer.colorTop !== s.colorTop;
+
     // 每段重新规划玩法元素
     s.barrierBottom = false;
     s.barrierTop = false;
     s.holeBottom = false;
     s.holeTop = false;
+    s.seamBottom = false;
+    s.seamTop = false;
     s.padLane = -1;
     s.padHit = false;
     s.orbLane[0] = -1;
@@ -1311,12 +1354,16 @@
   bestVal.textContent = String(state.best).padStart(5, '0');
 
   /* ==========================================================
-     九之二、昵称 / 闯关关卡 / 本地排行榜
+     九之二、登录账号 / 闯关关卡 / 排行榜
      ========================================================== */
   const nameScreen = $('nameScreen');
-  const nameInput = $('nameInput');
-  const nameOk = $('nameOk');
-  const nameErr = $('nameErr');
+  const authHint = $('authHint');
+  const authName = $('authName');
+  const authEmail = $('authEmail');
+  const authPass = $('authPass');
+  const authGo = $('authGo');
+  const authSwap = $('authSwap');
+  const authErr = $('authErr');
   const helloName = $('helloName');
   const changeName = $('changeName');
   const modeCampaign = $('modeCampaign');
@@ -1349,13 +1396,18 @@
   const BOARD_KEY = 'sr_board';
   const CAMP_KEY = 'sr_campaign';
 
-  /** 闯关关卡：目标距离 + 初速倍率 + 解锁的机制阶段 */
+  /** 闯关关卡：目标距离 + 速度倍率 + 解锁的机制阶段 */
   const LEVELS = [
-    { id: 1, name: '起跑线', target: 150, speed: 1.00, stage: 1 },
-    { id: 2, name: '双色弯道', target: 300, speed: 1.06, stage: 2 },
-    { id: 3, name: '断裂区', target: 450, speed: 1.12, stage: 3 },
-    { id: 4, name: '加速带', target: 600, speed: 1.18, stage: 4 },
-    { id: 5, name: '极限回廊', target: 800, speed: 1.24, stage: 5 },
+    { id: 1,  name: '起跑线',   target: 150,  speed: 1.00, stage: 1 },
+    { id: 2,  name: '双色弯道', target: 300,  speed: 1.03, stage: 2 },
+    { id: 3,  name: '断裂区',   target: 450,  speed: 1.06, stage: 3 },
+    { id: 4,  name: '加速带',   target: 600,  speed: 1.09, stage: 4 },
+    { id: 5,  name: '极限回廊', target: 800,  speed: 1.12, stage: 5 },
+    { id: 6,  name: '长夜',     target: 1000, speed: 1.15, stage: 5 },
+    { id: 7,  name: '断层峡谷', target: 1250, speed: 1.18, stage: 5 },
+    { id: 8,  name: '疾风隧道', target: 1500, speed: 1.21, stage: 5 },
+    { id: 9,  name: '深渊',     target: 1800, speed: 1.24, stage: 5 },
+    { id: 10, name: '终局之门', target: 2200, speed: 1.28, stage: 5 },
   ];
 
   let playerName = (localStorage.getItem(NAME_KEY) || '').trim().slice(0, 12);
@@ -1434,12 +1486,22 @@
     } catch (e) { return []; }
   }
 
-  /** 同一昵称只保留最好的一笔，再按距离、得分排序 */
+  /** 榜单条目的身份键：登录用户按 user_id 区分，本地/旧数据退回昵称 */
+  function boardKeyOf(r) {
+    return r.user_id ? 'u:' + r.user_id : 'n:' + r.name;
+  }
+
+  /** 当前玩家的身份键（登录后同名玩家也不会互相覆盖成绩） */
+  function myBoardKey() {
+    return authSession ? 'u:' + authSession.user.id : 'n:' + playerName;
+  }
+
   function dedupeBoard(list) {
     const map = new Map();
     for (const r of list) {
-      const cur = map.get(r.name);
-      if (!cur || r.dist > cur.dist || (r.dist === cur.dist && r.pts > cur.pts)) map.set(r.name, r);
+      const key = boardKeyOf(r);
+      const cur = map.get(key);
+      if (!cur || r.dist > cur.dist || (r.dist === cur.dist && r.pts > cur.pts)) map.set(key, r);
     }
     return [...map.values()].sort((a, b) => b.dist - a.dist || b.pts - a.pts);
   }
@@ -1449,7 +1511,7 @@
     if (cloudClient) {
       const { data, error } = await cloudClient
         .from('scores')
-        .select('name,dist,pts,combo')
+        .select('name,dist,pts,combo,user_id')
         .order('dist', { ascending: false })
         .order('pts', { ascending: false })
         .limit(300);
@@ -1461,9 +1523,10 @@
     return boardCache;
   }
 
-  /** 当前昵称在榜单里的最好距离 */
+  /** 当前账号在榜单里的最好距离 */
   function playerBest() {
-    const me = boardCache.find((r) => r.name === playerName);
+    const key = myBoardKey();
+    const me = boardCache.find((r) => boardKeyOf(r) === key);
     return me ? me.dist : 0;
   }
 
@@ -1480,11 +1543,16 @@
     };
 
     if (cloudClient) {
+      // 云端只能在登录状态下写入，user_id 由 RLS 校验必须等于当前账号
+      if (!authSession) return -1;
       try {
-        const { error } = await cloudClient.from('scores').insert(rec);
+        const { error } = await cloudClient
+          .from('scores')
+          .insert({ ...rec, user_id: authSession.user.id });
         if (error) throw error;
         await refreshBoard();
-        const idx = boardCache.findIndex((r) => r.name === playerName);
+        const key = myBoardKey();
+        const idx = boardCache.findIndex((r) => boardKeyOf(r) === key);
         return idx >= 0 ? idx + 1 : -2;
       } catch (e) {
         console.warn('成绩上传失败', e);
@@ -1504,8 +1572,8 @@
     localStorage.setItem(BOARD_KEY, JSON.stringify(list.slice(0, 20)));
 
     boardCache = dedupeBoard(list).slice(0, 20);
-    const idx = boardCache.findIndex((r) => r.name === playerName);
-    return idx >= 0 ? idx + 1 : -2;
+    const idx2 = boardCache.findIndex((r) => boardKeyOf(r) === myBoardKey());
+    return idx2 >= 0 ? idx2 + 1 : -2;
   }
 
   /* 页面切换：只显示一个覆盖层，传 null 表示全部隐藏（进入游戏） */
@@ -1528,19 +1596,91 @@
     endlessMeta.textContent = '个人最佳 ' + playerBest() + ' M';
   }
 
-  /** 打开昵称页 */
-  function openNameScreen(prefill) {
-    nameInput.value = prefill || '';
-    nameErr.textContent = '';
-    showScreen('nameScreen');
-    setTimeout(() => nameInput.focus(), 60);
+  /* ---------- 账号：邮箱 + 密码（Supabase Auth） ---------- */
+  let authSession = null;          // 当前登录会话；本地模式下始终为 null
+  let authMode = 'login';          // 'login' 登录 | 'register' 注册
+
+  /** 切换「登录 / 注册」两种界面状态 */
+  function setAuthMode(m) {
+    authMode = m;
+    const reg = m === 'register';
+    authName.hidden = !reg;                                  // 昵称只在注册时出现
+    // 注册时用上一次用过的昵称预填，减少输入
+    if (reg && !authName.value) authName.value = localStorage.getItem(NAME_KEY) || '';
+    authGo.textContent = reg ? '注 册' : '登 录';
+    authSwap.textContent = reg ? '已有账号？去登录' : '还没有账号？去注册';
+    authPass.setAttribute('autocomplete', reg ? 'new-password' : 'current-password');
+    authErr.textContent = '';
   }
 
-  /** 提交昵称 */
-  function submitName() {
-    const v = nameInput.value.trim().replace(/\s+/g, ' ').slice(0, 12);
+  /** 登录成功后统一收尾：写入昵称、刷新数据、进入主页 */
+  function afterLogin(user) {
+    const meta = (user && user.user_metadata) || {};
+    // 昵称优先取注册时填的 display_name，没有就用邮箱前缀
+    playerName = String(meta.display_name || (user && user.email) || '玩家').slice(0, 12);
+    localStorage.setItem(NAME_KEY, playerName);
+    authPass.value = '';
+    refreshBoard()
+      .catch(() => {})
+      .then(() => {
+        state.best = playerBest();
+        bestVal.textContent = String(state.best).padStart(5, '0');
+        renderHome();
+        showScreen('startScreen');
+      });
+  }
+
+  /** 执行登录或注册 */
+  async function doAuth() {
+    if (!cloudClient) return enterLocal();       // 云端不可用时退化为本地昵称
+
+    const email = authEmail.value.trim();
+    const pass = authPass.value;
+    const name = authName.value.trim().replace(/\s+/g, ' ').slice(0, 12);
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return (authErr.textContent = '请输入正确的邮箱');
+    if (pass.length < 6) return (authErr.textContent = '密码至少 6 位');
+    if (authMode === 'register' && !name) return (authErr.textContent = '请填写昵称');
+
+    authGo.disabled = true;
+    authErr.textContent = '处理中…';
+    try {
+      if (authMode === 'register') {
+        const { data, error } = await cloudClient.auth.signUp({
+          email,
+          password: pass,
+          options: { data: { display_name: name } },   // 昵称存进用户元数据
+        });
+        if (error) throw error;
+        if (!data.session) {
+          // 项目仍开启「邮箱确认」：注册后必须先去邮箱点确认链接
+          setAuthMode('login');
+          authEmail.value = email;
+          authErr.textContent = '注册成功，请先到邮箱点确认链接，再回来登录';
+          return;
+        }
+        afterLogin(data.user);
+      } else {
+        const { data, error } = await cloudClient.auth.signInWithPassword({ email, password: pass });
+        if (error) throw error;
+        afterLogin(data.user);
+      }
+    } catch (e) {
+      const msg = (e && (e.message || e.error_description)) || '操作失败';
+      authErr.textContent = /already registered|already exists/i.test(msg)
+        ? '这个邮箱已经注册过了，请直接登录'
+        : (/invalid login/i.test(msg) ? '邮箱或密码不正确' : msg);
+    } finally {
+      authGo.disabled = false;
+      if (authErr.textContent === '处理中…') authErr.textContent = '';
+    }
+  }
+
+  /** 本地模式（未配置云端）下直接用昵称进入 */
+  function enterLocal() {
+    const v = authName.value.trim().replace(/\s+/g, ' ').slice(0, 12);
     if (!v) {
-      nameErr.textContent = '昵称不能为空';
+      authErr.textContent = '昵称不能为空';
       return;
     }
     playerName = v;
@@ -1549,6 +1689,43 @@
     bestVal.textContent = String(state.best).padStart(5, '0');
     renderHome();
     showScreen('startScreen');
+  }
+
+  /** 打开登录页；根据是否有云端决定显示登录表单还是纯昵称输入 */
+  function openNameScreen() {
+    authErr.textContent = '';
+    authPass.value = '';
+
+    if (!cloudClient) {
+      authHint.textContent = '云端未连接 · 昵称和成绩只保存在这台设备';
+      authName.hidden = false;
+      authEmail.hidden = true;
+      authPass.hidden = true;
+      authSwap.hidden = true;
+      authGo.textContent = '进 入';
+      authGo.disabled = false;
+      setTimeout(() => authName.focus(), 80);
+    } else {
+      authHint.textContent = '登录后成绩才会记在你自己名下，别人无法冒用';
+      authName.hidden = true;
+      authEmail.hidden = false;
+      authPass.hidden = false;
+      authSwap.hidden = false;
+      setAuthMode('login');
+      setTimeout(() => authEmail.focus(), 80);
+    }
+    showScreen('nameScreen');
+  }
+
+  /** 退出登录 */
+  async function logout() {
+    if (cloudClient) {
+      try { await cloudClient.auth.signOut(); } catch (e) { /* 忽略退出失败 */ }
+    }
+    authSession = null;
+    playerName = '';
+    localStorage.removeItem(NAME_KEY);
+    openNameScreen();
   }
 
   /** 渲染关卡列表 */
@@ -1606,9 +1783,11 @@
     head.innerHTML = '<div>#</div><div>玩家</div><div>距离</div><div>得分</div>';
     boardList.appendChild(head);
 
+    // 自己的那一行高亮：优先按账号 ID 匹配，本地模式退回昵称
+    const myKey = myBoardKey();
     list.slice(0, 10).forEach((r, i) => {
       const row = document.createElement('div');
-      row.className = 'board-row' + (r.name === playerName ? ' me' : '');
+      row.className = 'board-row' + (boardKeyOf(r) === myKey ? ' me' : '');
       row.innerHTML =
         '<div class="board-rank">' + (i + 1) + '</div>' +
         '<div>' + esc(r.name) + '</div>' +
@@ -2163,9 +2342,9 @@
      十四、输入
      ========================================================== */
   window.addEventListener('keydown', (e) => {
-    // 正在输入昵称时，键盘只服务于输入框
-    if (document.activeElement === nameInput) {
-      if (e.code === 'Enter') submitName();
+    // 正在填登录表单时，键盘只服务于输入框（回车直接提交）
+    if (document.activeElement === authEmail || document.activeElement === authPass || document.activeElement === authName) {
+      if (e.code === 'Enter') doAuth();
       return;
     }
 
@@ -2213,8 +2392,10 @@
     renderHome();
     showScreen('startScreen');
   });
-  changeName.addEventListener('click', () => openNameScreen(playerName));
-  nameOk.addEventListener('click', submitName);
+  // 退出登录（云端）或回到昵称页（本地）
+  changeName.addEventListener('click', logout);
+  authGo.addEventListener('click', doAuth);
+  authSwap.addEventListener('click', () => setAuthMode(authMode === 'login' ? 'register' : 'login'));
 
   /* --- 结算按钮 --- */
   btnRetry.addEventListener('click', restartGame);
@@ -2272,23 +2453,31 @@
   state.best = playerBest();
   bestVal.textContent = String(state.best).padStart(5, '0');
 
-  // 有昵称直接进主页，否则先让玩家起名字
-  if (playerName) {
-    renderHome();
-    showScreen('startScreen');
-  } else {
-    showScreen('nameScreen');
-    setTimeout(() => nameInput.focus(), 350);
-  }
-
-  // 异步初始化云端榜单：没配 config.js 会自动走本地榜单
+  // 先连云端，再恢复登录态，最后决定停在主页还是登录页
   initLeaderboard()
-    .then(() => refreshBoard())
+    .then(async () => {
+      if (!cloudClient) return;
+      // 恢复上次登录会话（Supabase 会自己存在 localStorage 里）
+      const { data } = await cloudClient.auth.getSession();
+      authSession = (data && data.session) || null;
+      // 会话刷新时同步本地变量
+      cloudClient.auth.onAuthStateChange((_evt, s) => { authSession = s || null; });
+    })
     .catch(() => {})
+    .then(() => refreshBoard().catch(() => {}))
     .then(() => {
       state.best = playerBest();
       bestVal.textContent = String(state.best).padStart(5, '0');
-      if (state.mode === 'ready') renderHome();
+      if (authSession) {
+        // 已登录：直接用账号里的昵称进主页
+        const meta = authSession.user.user_metadata || {};
+        playerName = String(meta.display_name || authSession.user.email || playerName).slice(0, 12);
+        localStorage.setItem(NAME_KEY, playerName);
+        renderHome();
+        showScreen('startScreen');
+      } else {
+        openNameScreen();
+      }
     });
 
   requestAnimationFrame(loop);
