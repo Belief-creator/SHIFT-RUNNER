@@ -1637,6 +1637,9 @@
     // 「忘记密码」只在登录模式显示
     authForgot.hidden = m !== 'login';
 
+    // 从重置邮件链接直接进入 resetConfirm 时没走过 openNameScreen，按钮还带着 HTML 默认的 disabled，这里解禁
+    if (resetConfirm) authGo.disabled = false;
+
     if (reg && !authName.value) authName.value = localStorage.getItem(NAME_KEY) || '';
     authPass.setAttribute('autocomplete', (reg || resetConfirm) ? 'new-password' : 'current-password');
     authErr.textContent = '';
