@@ -173,6 +173,17 @@
     transition:opacity .34s ease,visibility .34s ease;
   }
   .overlay.hide{opacity:0;visibility:hidden;pointer-events:none;}
+  /* 竖屏提示层：层级最高，竖屏时始终盖在最上面 */
+  #rotateScreen{z-index:30;}
+  .rotate-icon{
+    font-size:64px;line-height:1;color:#9fe3da;margin-bottom:18px;
+    filter:drop-shadow(0 0 18px rgba(46,211,190,.5));
+    animation:rotateHint 2.2s ease-in-out infinite;
+  }
+  @keyframes rotateHint{
+    0%,100%{transform:rotate(0deg);}
+    50%{transform:rotate(90deg);}
+  }
   /* 主页 / 昵称页时隐藏游戏 HUD，保持画面干净 */
   #hud{transition:opacity .28s ease;}
   #hud.off{opacity:0;}
@@ -562,6 +573,15 @@
         <button class="btn ghost" id="btnAgain" type="button">再 来 一 次</button>
         <button class="btn ghost" id="btnClearHome" type="button">返回主页</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 竖屏提示层：触屏设备竖屏时覆盖画面，引导旋转到横屏 -->
+  <div class="overlay hide" id="rotateScreen">
+    <div class="panel">
+      <div class="rotate-icon">↻</div>
+      <div class="over-title" style="font-size:clamp(26px,6vw,46px)">请 横 屏 游 玩</div>
+      <div class="over-reason">旋转手机到横向，获得最佳体验</div>
     </div>
   </div>
 
@@ -2445,6 +2465,20 @@
     update(dt);
     renderer.render(scene, camera);
   }
+
+  /* ==========================================================
+     竖屏引导：触屏设备竖屏时显示「请横屏」覆盖层
+     ========================================================== */
+  const rotateScreen = $('rotateScreen');
+  function refreshRotateHint() {
+    // 只对触屏设备生效：桌面把窗口拉成竖条时不弹提示
+    const isTouch = matchMedia('(pointer: coarse)').matches;
+    const portrait = matchMedia('(orientation: portrait)').matches;
+    rotateScreen.classList.toggle('hide', !(isTouch && portrait));
+  }
+  matchMedia('(orientation: portrait)').addEventListener('change', refreshRotateHint);
+  matchMedia('(pointer: coarse)').addEventListener('change', refreshRotateHint);
+  refreshRotateHint();
 
   /* ==========================================================
      十七、启动
