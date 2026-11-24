@@ -173,17 +173,6 @@
     transition:opacity .34s ease,visibility .34s ease;
   }
   .overlay.hide{opacity:0;visibility:hidden;pointer-events:none;}
-  /* 竖屏提示层：层级最高，竖屏时始终盖在最上面 */
-  #rotateScreen{z-index:30;}
-  .rotate-icon{
-    font-size:64px;line-height:1;color:#9fe3da;margin-bottom:18px;
-    filter:drop-shadow(0 0 18px rgba(46,211,190,.5));
-    animation:rotateHint 2.2s ease-in-out infinite;
-  }
-  @keyframes rotateHint{
-    0%,100%{transform:rotate(0deg);}
-    50%{transform:rotate(90deg);}
-  }
   /* 主页 / 昵称页时隐藏游戏 HUD，保持画面干净 */
   #hud{transition:opacity .28s ease;}
   #hud.off{opacity:0;}
@@ -481,10 +470,13 @@
              autocomplete="username" autocorrect="off" spellcheck="false" />
       <input id="authPass" class="name-input" type="password" placeholder="密码（至少 6 位）"
              autocomplete="current-password" />
+      <input id="authPass2" class="name-input" type="password" placeholder="再次输入新密码"
+             autocomplete="new-password" hidden />
 
       <div class="btns">
         <button id="authGo" class="btn primary" type="button" disabled>登 录</button>
       </div>
+      <button id="authForgot" class="link auth-swap" type="button">忘记密码？</button>
       <button id="authSwap" class="link auth-swap" type="button">还没有账号？去注册</button>
       <div class="name-err" id="authErr"></div>
     </div>
@@ -573,15 +565,6 @@
         <button class="btn ghost" id="btnAgain" type="button">再 来 一 次</button>
         <button class="btn ghost" id="btnClearHome" type="button">返回主页</button>
       </div>
-    </div>
-  </div>
-
-  <!-- 竖屏提示层：触屏设备竖屏时覆盖画面，引导旋转到横屏 -->
-  <div class="overlay hide" id="rotateScreen">
-    <div class="panel">
-      <div class="rotate-icon">↻</div>
-      <div class="over-title" style="font-size:clamp(26px,6vw,46px)">请 横 屏 游 玩</div>
-      <div class="over-reason">旋转手机到横向，获得最佳体验</div>
     </div>
   </div>
 
@@ -1381,8 +1364,10 @@
   const authName = $('authName');
   const authEmail = $('authEmail');
   const authPass = $('authPass');
+  const authPass2 = $('authPass2');
   const authGo = $('authGo');
   const authSwap = $('authSwap');
+  const authForgot = $('authForgot');
   const authErr = $('authErr');
   const helloName = $('helloName');
   const changeName = $('changeName');
@@ -1620,16 +1605,34 @@
   let authSession = null;          // 当前登录会话；本地模式下始终为 null
   let authMode = 'login';          // 'login' 登录 | 'register' 注册
 
-  /** 切换「登录 / 注册」两种界面状态 */
+  /** 切换登录 / 注册 / 忘记密码 / 设置新密码 四种界面状态 */
   function setAuthMode(m) {
     authMode = m;
     const reg = m === 'register';
-    authName.hidden = !reg;                                  // 昵称只在注册时出现
-    // 注册时用上一次用过的昵称预填，减少输入
+    const reset = m === 'reset';           // 请求重置邮件
+    const resetConfirm = m === 'resetConfirm';  // 从邮件链接进入，设置新密码
+
+    authName.hidden = !reg;                 // 昵称只在注册时出现
+    authEmail.hidden = resetConfirm;        // 邮箱除「设置新密码」外都显示
+    authPass.hidden = reset;                // 密码除「请求重置邮件」外都显示
+    authPass2.hidden = !resetConfirm;       // 确认密码只在重置时显示
+
+    authGo.textContent = reset
+      ? '发送重置邮件'
+      : (resetConfirm ? '设 置 新 密 码' : (reg ? '注 册' : '登 录'));
+
+    // 底部切换链接：注册 / 重置都能返回登录；设置新密码时隐藏
+    authSwap.hidden = resetConfirm;
+    if (!resetConfirm) {
+      authSwap.textContent = reg
+        ? '已有账号？去登录'
+        : (reset ? '返回登录' : '还没有账号？去注册');
+    }
+    // 「忘记密码」只在登录模式显示
+    authForgot.hidden = m !== 'login';
+
     if (reg && !authName.value) authName.value = localStorage.getItem(NAME_KEY) || '';
-    authGo.textContent = reg ? '注 册' : '登 录';
-    authSwap.textContent = reg ? '已有账号？去登录' : '还没有账号？去注册';
-    authPass.setAttribute('autocomplete', reg ? 'new-password' : 'current-password');
+    authPass.setAttribute('autocomplete', (reg || resetConfirm) ? 'new-password' : 'current-password');
     authErr.textContent = '';
   }
 
@@ -1653,6 +1656,53 @@
   /** 执行登录或注册 */
   async function doAuth() {
     if (!cloudClient) return enterLocal();       // 云端不可用时退化为本地昵称
+
+    // 忘记密码：只需要邮箱，发送重置邮件
+    if (authMode === 'reset') {
+      const email = authEmail.value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return (authErr.textContent = '请输入正确的邮箱');
+      authGo.disabled = true;
+      authErr.textContent = '发送中…';
+      try {
+        const { error } = await cloudClient.auth.resetPasswordForEmail(email, {
+          // 邮件里的链接会跳回本站，Supabase 在 URL 上带 recovery 令牌
+          redirectTo: window.location.origin + window.location.pathname,
+        });
+        if (error) throw error;
+        setAuthMode('login');
+        authEmail.value = email;
+        authErr.textContent = '重置邮件已发送，请查收邮箱（可能在垃圾箱）';
+      } catch (e) {
+        authErr.textContent = (e && (e.message || e.error_description)) || '发送失败';
+      } finally {
+        authGo.disabled = false;
+        if (authErr.textContent === '发送中…') authErr.textContent = '';
+      }
+      return;
+    }
+
+    // 从重置邮件链接进入：设置新密码
+    if (authMode === 'resetConfirm') {
+      const p = authPass.value;
+      const p2 = authPass2.value;
+      if (p.length < 6) { authErr.textContent = '密码至少 6 位'; return; }
+      if (p !== p2) { authErr.textContent = '两次输入的密码不一致'; return; }
+      authGo.disabled = true;
+      authErr.textContent = '保存中…';
+      try {
+        const { error } = await cloudClient.auth.updateUser({ password: p });
+        if (error) throw error;
+        // 清掉 URL 里的 recovery 令牌，避免刷新重复触发
+        history.replaceState(null, '', window.location.pathname);
+        afterLogin(authSession.user);
+      } catch (e) {
+        authErr.textContent = (e && (e.message || e.error_description)) || '保存失败';
+      } finally {
+        authGo.disabled = false;
+        if (authErr.textContent === '保存中…') authErr.textContent = '';
+      }
+      return;
+    }
 
     const email = authEmail.value.trim();
     const pass = authPass.value;
@@ -1715,13 +1765,16 @@
   function openNameScreen() {
     authErr.textContent = '';
     authPass.value = '';
+    authPass2.value = '';
 
     if (!cloudClient) {
       authHint.textContent = '云端未连接 · 昵称和成绩只保存在这台设备';
       authName.hidden = false;
       authEmail.hidden = true;
       authPass.hidden = true;
+      authPass2.hidden = true;
       authSwap.hidden = true;
+      authForgot.hidden = true;
       authGo.textContent = '进 入';
       authGo.disabled = false;
       setTimeout(() => authName.focus(), 80);
@@ -2342,7 +2395,9 @@
     camera.position.y += (Math.random() - 0.5) * shake * 0.45;
     camera.lookAt(-0.9, -0.3 + state.ballY * 0.12, -11.5);
 
-    const fovTarget = 66 + (state.speed - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed) * 9;
+    // 竖屏用更宽的基础视野（78°），横屏 66°；再叠加速度感
+    const baseFov = window.innerWidth < window.innerHeight ? 78 : 66;
+    const fovTarget = baseFov + (state.speed - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed) * 9;
     if (Math.abs(camera.fov - fovTarget) > 0.02) {
       camera.fov += (fovTarget - camera.fov) * Math.min(1, dt * 3);
       camera.updateProjectionMatrix();
@@ -2364,7 +2419,8 @@
      ========================================================== */
   window.addEventListener('keydown', (e) => {
     // 正在填登录表单时，键盘只服务于输入框（回车直接提交）
-    if (document.activeElement === authEmail || document.activeElement === authPass || document.activeElement === authName) {
+    if (document.activeElement === authEmail || document.activeElement === authPass
+        || document.activeElement === authPass2 || document.activeElement === authName) {
       if (e.code === 'Enter') doAuth();
       return;
     }
@@ -2416,7 +2472,13 @@
   // 退出登录（云端）或回到昵称页（本地）
   changeName.addEventListener('click', logout);
   authGo.addEventListener('click', doAuth);
-  authSwap.addEventListener('click', () => setAuthMode(authMode === 'login' ? 'register' : 'login'));
+  // 切换：登录→注册；注册/重置→登录
+  authSwap.addEventListener('click', () => {
+    if (authMode === 'register' || authMode === 'reset') setAuthMode('login');
+    else setAuthMode('register');
+  });
+  // 忘记密码
+  authForgot.addEventListener('click', () => setAuthMode('reset'));
 
   /* --- 结算按钮 --- */
   btnRetry.addEventListener('click', restartGame);
@@ -2445,12 +2507,17 @@
      十五、窗口尺寸
      ========================================================== */
   function onResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    const aspect = window.innerWidth / window.innerHeight;
+    camera.aspect = aspect;
+    // 竖屏时放宽视野，避免横向太窄看不清跑道与小球；横屏用默认 66°
+    camera.fov = aspect < 1 ? 78 : 66;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   }
+  // 横竖屏切换会触发 resize；额外监听 orientationchange，兼容个别不触发 resize 的浏览器
   window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', () => setTimeout(onResize, 250));
 
   /* ==========================================================
      十六、主循环
@@ -2465,20 +2532,6 @@
     update(dt);
     renderer.render(scene, camera);
   }
-
-  /* ==========================================================
-     竖屏引导：触屏设备竖屏时显示「请横屏」覆盖层
-     ========================================================== */
-  const rotateScreen = $('rotateScreen');
-  function refreshRotateHint() {
-    // 只对触屏设备生效：桌面把窗口拉成竖条时不弹提示
-    const isTouch = matchMedia('(pointer: coarse)').matches;
-    const portrait = matchMedia('(orientation: portrait)').matches;
-    rotateScreen.classList.toggle('hide', !(isTouch && portrait));
-  }
-  matchMedia('(orientation: portrait)').addEventListener('change', refreshRotateHint);
-  matchMedia('(pointer: coarse)').addEventListener('change', refreshRotateHint);
-  refreshRotateHint();
 
   /* ==========================================================
      十七、启动
@@ -2504,6 +2557,12 @@
       state.best = playerBest();
       bestVal.textContent = String(state.best).padStart(5, '0');
       if (authSession) {
+        // 从密码重置邮件点链接进入：URL 带 recovery 令牌，强制先设置新密码
+        if (/type=recovery/.test(window.location.hash)) {
+          showScreen('nameScreen');
+          setAuthMode('resetConfirm');
+          return;
+        }
         // 已登录：直接用账号里的昵称进主页
         const meta = authSession.user.user_metadata || {};
         playerName = String(meta.display_name || authSession.user.email || playerName).slice(0, 12);
