@@ -751,10 +751,60 @@
     return t;
   }
 
+  // 3.5 踏板纹理：暗底 + 白色发光边框 + 中心高亮 + 功能图案
+  //     解决加速带（金）/ 弹跳板（紫）在跑道上看不清的问题：
+  //     金色与跑道金同色系，必须靠白色边框与图案拉开辨识度。
+  function makePadTexture(hex, pattern) {
+    const s = 128;
+    const c = document.createElement('canvas');
+    c.width = c.height = s;
+    const g = c.getContext('2d');
+    const col = '#' + hex.toString(16).padStart(6, '0');
+    // 底色：对应颜色的低透明暗版，避免太抢
+    g.fillStyle = col;
+    g.globalAlpha = 0.35;
+    g.fillRect(0, 0, s, s);
+    g.globalAlpha = 1;
+    // 白色发光边框（带颜色光晕），远处也能看清轮廓；边框稍细，给中心色留空间
+    g.shadowColor = col;
+    g.shadowBlur = 18;
+    g.strokeStyle = 'rgba(255,255,255,0.9)';
+    g.lineWidth = 7;
+    g.strokeRect(7, 7, s - 14, s - 14);
+    g.shadowBlur = 0;
+    // 中心亮色填充：完全实色，让金/紫语义清晰可辨，白边只起描边作用
+    g.fillStyle = col;
+    g.globalAlpha = 1.0;
+    g.fillRect(18, 18, s - 36, s - 36);
+    g.globalAlpha = 1;
+    // 功能图案（白色）：加速带=横向速度线，弹跳板=菱形
+    g.fillStyle = 'rgba(255,255,255,0.85)';
+    if (pattern === 'speed') {
+      for (let i = 0; i < 3; i++) {
+        g.fillRect(30, 34 + i * 30, s - 60, 8);
+      }
+    } else {
+      g.beginPath();
+      g.moveTo(s / 2, 30);
+      g.lineTo(s - 30, s / 2);
+      g.lineTo(s / 2, s - 30);
+      g.lineTo(30, s / 2);
+      g.closePath();
+      g.fill();
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(1, 1);
+    return t;
+  }
+
   const glowTex = makeRadialTexture();
   const stripTex = makeStripTexture();
   const wallTex = makeGridTexture();
   const stripeTex = makeStripeTexture();
+  // 加速带（亮金）/ 弹跳板（亮紫）纹理：颜色提亮以拉开与跑道的对比
+  const boostPadTex = makePadTexture(0xffe39a, 'speed');
+  const jumpPadTex = makePadTexture(0xb47bff, 'jump');
 
   /* ==========================================================
      四、共享几何体与材质（所有赛道段复用，降低开销）
@@ -763,6 +813,8 @@
     slab: new THREE.BoxGeometry(1, 0.85, 1),   // 跑道板（加厚，侧面是一条明显的色带）
     glow: new THREE.PlaneGeometry(1, 1),      // 发光条
     unit: new THREE.BoxGeometry(1, 1, 1),     // 通用方块
+    padGlow: new THREE.PlaneGeometry(1, 1),   // 踏板辉光面（水平放置，放大踏板光晕）
+    padEdge: new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)),  // 踏板白色线框
   };
 
   // 两种颜色的跑道材质（自发光霓虹；压暗成低调色面，靠边线提亮）
@@ -794,9 +846,20 @@
   // 障碍墙材质
   const barrierMat = new THREE.MeshBasicMaterial({ map: stripeTex });
 
-  // 加速带（亮金）/ 弹跳板（紫）
-  const boostMat = new THREE.MeshBasicMaterial({ color: 0xffc46b, toneMapped: false });
-  const jumpMat = new THREE.MeshBasicMaterial({ color: 0xb98bff, toneMapped: false });
+  // 加速带（亮金）/ 弹跳板（亮紫）：带白色发光边框纹理 + 提亮颜色，与跑道拉开对比
+  const boostMat = new THREE.MeshBasicMaterial({ map: boostPadTex, toneMapped: false });
+  const jumpMat = new THREE.MeshBasicMaterial({ map: jumpPadTex, toneMapped: false });
+  // 踏板辉光（叠加混合）：让踏板在远处也有一团光晕，避免融进跑道底色
+  const boostGlowMat = new THREE.MeshBasicMaterial({
+    color: 0xffe39a, transparent: true, opacity: 0.7,
+    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+  });
+  const jumpGlowMat = new THREE.MeshBasicMaterial({
+    color: 0xb47bff, transparent: true, opacity: 0.7,
+    blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+  });
+  // 踏板白色发光边框线框：强化轮廓，侧视下也能一眼定位踏板
+  const padFrameMat = new THREE.LineBasicMaterial({ color: 0xffffff, toneMapped: false });
   // 断裂跑道的端头警示条
   const dangerMat = new THREE.MeshBasicMaterial({ color: 0xd8574e, toneMapped: false });
 
@@ -986,11 +1049,18 @@
     orbA.visible = false;
     orbB.visible = false;
 
-    // 加速带 / 弹跳板
+    // 加速带 / 弹跳板（主体 + 辉光面 + 白色线框，三者平级同步显隐）
     const bPad = new THREE.Mesh(GEO.unit, boostMat);
+    const bPadGlow = new THREE.Mesh(GEO.padGlow, boostGlowMat);
+    const bPadFrame = new THREE.LineSegments(GEO.padEdge, padFrameMat);
     const tPad = new THREE.Mesh(GEO.unit, boostMat);
-    bPad.visible = false;
-    tPad.visible = false;
+    const tPadGlow = new THREE.Mesh(GEO.padGlow, boostGlowMat);
+    const tPadFrame = new THREE.LineSegments(GEO.padEdge, padFrameMat);
+    bPad.visible = bPadGlow.visible = bPadFrame.visible = false;
+    tPad.visible = tPadGlow.visible = tPadFrame.visible = false;
+    // 辉光面水平放置（法线指向跑道外侧），在 layoutSegment 里定位到踏板表面
+    bPadGlow.rotation.x = -Math.PI / 2;
+    tPadGlow.rotation.x = -Math.PI / 2;
 
     // 断裂跑道端头的红色警示条
     const bHoleMark = new THREE.Mesh(GEO.unit, dangerMat);
@@ -1005,12 +1075,14 @@
     tSeam.visible = false;
 
     group.add(bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR,
-      orbA, orbB, bPad, tPad, bHoleMark, tHoleMark, bSeam, tSeam);
+      orbA, orbB, bPad, bPadGlow, bPadFrame, tPad, tPadGlow, tPadFrame,
+      bHoleMark, tHoleMark, bSeam, tSeam);
     scene.add(group);
 
     return {
       group, bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR,
-      bPad, tPad, bHoleMark, tHoleMark, bSeam, tSeam, orbNodes: [orbA, orbB],
+      bPad, bPadGlow, bPadFrame, tPad, tPadGlow, tPadFrame,
+      bHoleMark, tHoleMark, bSeam, tSeam, orbNodes: [orbA, orbB],
       far: 0, near: 0, len: 0,
       colorBottom: 0, colorTop: 0,
       seamBottom: false, seamTop: false,
@@ -1121,18 +1193,36 @@
       s.tSeam.position.set(0, SURFACE_Y - 0.06, len / 2 - 0.13);
     }
 
-    // --- 加速带 / 弹跳板：贴在跑道面上的发光踏板 ---
+    // --- 加速带 / 弹跳板：贴在跑道面上的发光踏板（主体 + 辉光 + 白色线框） ---
+    // 加厚并加长，让 2.5D 侧视斜俯视下轮廓清晰；辉光面放在踏板表面外侧产生光晕
     const padMatNow = s.padType === 'jump' ? jumpMat : boostMat;
-    s.bPad.visible = s.padLane === 0;
-    s.tPad.visible = s.padLane === 1;
+    const padGlowNow = s.padType === 'jump' ? jumpGlowMat : boostGlowMat;
+    const padW = W * 0.46;       // 踏板宽度（略宽，更醒目）
+    const padLen = 1.7;          // 踏板纵深（加长，远处也能看到一块明显区域）
+    const padH = 0.26;           // 踏板厚度（加厚，侧面露出轮廓，不再是一条线）
+    const padSurf = 0.06;        // 踏板表面距跑道面的偏移
+    s.bPad.visible = s.bPadGlow.visible = s.bPadFrame.visible = (s.padLane === 0);
+    s.tPad.visible = s.tPadGlow.visible = s.tPadFrame.visible = (s.padLane === 1);
     if (s.padLane === 0) {
+      // 下层跑道：踏板在跑道面（-SURFACE_Y）上方
       s.bPad.material = padMatNow;
-      s.bPad.scale.set(W * 0.44, 0.12, 1.4);
-      s.bPad.position.set(0, -SURFACE_Y + 0.06, s.padZ);
+      s.bPad.scale.set(padW, padH, padLen);
+      s.bPad.position.set(0, -SURFACE_Y + padSurf + padH / 2, s.padZ);
+      s.bPadGlow.material = padGlowNow;
+      s.bPadGlow.scale.set(padW * 1.18, padLen * 1.28, 1);   // 辉光比踏板略大
+      s.bPadGlow.position.set(0, -SURFACE_Y + padSurf + padH + 0.03, s.padZ);
+      s.bPadFrame.scale.set(padW, padH, padLen);
+      s.bPadFrame.position.set(0, -SURFACE_Y + padSurf + padH / 2, s.padZ);
     } else if (s.padLane === 1) {
+      // 上层跑道：踏板在跑道面（SURFACE_Y）下方
       s.tPad.material = padMatNow;
-      s.tPad.scale.set(W * 0.44, 0.12, 1.4);
-      s.tPad.position.set(0, SURFACE_Y - 0.06, s.padZ);
+      s.tPad.scale.set(padW, padH, padLen);
+      s.tPad.position.set(0, SURFACE_Y - padSurf - padH / 2, s.padZ);
+      s.tPadGlow.material = padGlowNow;
+      s.tPadGlow.scale.set(padW * 1.18, padLen * 1.28, 1);
+      s.tPadGlow.position.set(0, SURFACE_Y - padSurf - padH - 0.03, s.padZ);
+      s.tPadFrame.scale.set(padW, padH, padLen);
+      s.tPadFrame.position.set(0, SURFACE_Y - padSurf - padH / 2, s.padZ);
     }
 
     // --- 收集光点 ---
