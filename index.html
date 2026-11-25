@@ -612,6 +612,9 @@
   <!-- 颜色不符提示 -->
   <div id="warn">颜色不符 · 越线即失败</div>
 
+  <!-- 连击倍率提示：连击达到 2 时显示，倍率升档时弹一下（b=倍率，span=连击数） -->
+  <div id="combo"><b id="comboMult">×1.0</b><span id="comboTxt">连击 0</span></div>
+
   <!-- 道具拾取提示：吃到护盾/复活/磁吸时弹出 -->
   <div id="pickupToast"><b id="pickupTxt">🛡 护盾激活！</b></div>
 
@@ -747,32 +750,56 @@
 
   <div id="boot">L O A D I N G</div>
 
+  <!-- 资源兜底提示：若 12 秒仍未进入游戏，说明 three.js 没加载出来，点击可重试 -->
   <script>
-    /* 如果 6 秒后仍没有进入游戏，说明 three.js 没加载出来（通常是断网） */
     window.__bootTimer = setTimeout(function () {
       var b = document.getElementById('boot');
-      if (b && !b.classList.contains('hide')) b.textContent = 'three.js 加载失败 · 请检查网络';
-    }, 6000);
-  </script>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
-    }
-  }
+      if (b && !b.classList.contains('hide')) {
+        b.textContent = '加载失败 · 点击重试';
+        b.style.pointerEvents = 'auto';
+        b.style.cursor = 'pointer';
+        b.addEventListener('click', function () { location.reload(); }, { once: true });
+      }
+    }, 12000);
   </script>
 
   <!-- 云端榜单配置（公开的 anon key，安全由数据库 RLS 保证） -->
   <script src="config.js"></script>
 
   <script type="module">
-  import * as THREE from 'three';
-
   // 页面加载瞬间先记下 URL hash：Supabase 的 getSession 会消费并清掉 recovery 令牌，
   // 之后再读 window.location.hash 就读不到了，所以必须在最开始存一份，
   // 用于判断本次是否从「忘记密码」邮件的重置链接进入
   const pageLoadHash = window.location.hash;
+
+  /* three.js 加载策略：优先同源 vendor 目录（移动端/国内网络访问 jsdelivr 经常超时），
+     失败后依次降级到其它公共 CDN，避免整个游戏卡死在加载页 */
+  const THREE_SOURCES = [
+    './vendor/three.module.min.js',
+    'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js',
+    'https://unpkg.com/three@0.160.0/build/three.module.min.js',
+    'https://esm.sh/three@0.160.0'
+  ];
+  let THREE = null;
+  for (const src of THREE_SOURCES) {
+    try {
+      THREE = await import(src);   // 任一源加载成功即停止尝试
+      break;
+    } catch (err) {
+      console.warn('[three] 加载失败：', src, err);
+    }
+  }
+  if (!THREE) {
+    // 所有源都不可用：显示可点击重试的提示，而不是一直停在 LOADING
+    const b = document.getElementById('boot');
+    if (b) {
+      b.textContent = '资源加载失败 · 点击重试';
+      b.style.pointerEvents = 'auto';
+      b.style.cursor = 'pointer';
+      b.addEventListener('click', () => location.reload(), { once: true });
+    }
+    throw new Error('three.js 加载失败');
+  }
 
   /* ==========================================================
      一、全局配置
