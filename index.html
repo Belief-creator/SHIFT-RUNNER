@@ -439,6 +439,70 @@
   .stars .off{color:rgba(255,255,255,.12);text-shadow:none;}
   .over-title.ok{color:#8ef0d8;text-shadow:0 0 26px rgba(46,211,190,.6);}
   .goal-line{margin-top:5px;font-size:10px;letter-spacing:.12em;color:rgba(255,214,150,.8);}
+
+  /* ============ 低分 / 高亮反馈（本批新增） ============ */
+
+  /* HUD 的 BEST：本局已经超过历史最高时点亮，方便实时对比 */
+  .best.hot{
+    color:#ffe7bc;
+    text-shadow:0 0 14px rgba(242,174,60,.75);
+  }
+
+  /* 死亡闪红加强版：里程碑只做轻微闪光，不遮挡画面 */
+  .flash.soft{opacity:.16;}
+
+  /* 里程碑：屏幕正中的大字提示，约 0.8 秒后淡出 */
+  #milestone{
+    position:fixed;left:50%;top:50%;z-index:8;pointer-events:none;
+    transform:translate(-50%,-50%) scale(.82);
+    opacity:0;text-align:center;white-space:nowrap;
+    transition:opacity .28s ease,transform .28s cubic-bezier(.2,1.6,.4,1);
+  }
+  #milestone.on{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  #milestone b{
+    display:inline-block;font-size:clamp(34px,8vw,62px);font-weight:800;letter-spacing:.08em;
+    color:#f4fffd;
+    text-shadow:0 0 26px rgba(46,211,190,.9),0 0 60px rgba(46,211,190,.5);
+  }
+  #milestone.on b{animation:msGlow .8s ease-out;}
+  @keyframes msGlow{
+    0%{filter:brightness(2.2) drop-shadow(0 0 30px #fff);}
+    100%{filter:brightness(1);}
+  }
+
+  /* 破纪录徽章：金色描边 + 呼吸闪光 */
+  .new-record{
+    display:inline-block;margin-top:14px;padding:7px 20px;border-radius:999px;
+    font-size:13px;font-weight:700;letter-spacing:.24em;color:#fff3d6;
+    background:linear-gradient(180deg,rgba(242,174,60,.3),rgba(242,174,60,.08));
+    border:1px solid rgba(242,174,60,.6);
+    box-shadow:0 0 32px rgba(242,174,60,.45),inset 0 1px 0 rgba(255,255,255,.2);
+    animation:recordFlash .9s ease-in-out infinite;
+  }
+  /* .hide 由全局覆盖层隐藏规则复用：这里额外用 !important 保证徽章能被隐藏 */
+  .new-record.hide{display:none !important;}
+  @keyframes recordFlash{
+    0%,100%{transform:scale(1);box-shadow:0 0 32px rgba(242,174,60,.35),inset 0 1px 0 rgba(255,255,255,.2);}
+    50%{transform:scale(1.06);box-shadow:0 0 54px rgba(255,214,120,.75),inset 0 1px 0 rgba(255,255,255,.3);}
+  }
+
+  /* 结算页「距离上一名还差」行 */
+  .over-gap{
+    margin-top:8px;font-size:11.5px;letter-spacing:.12em;color:rgba(150,225,215,.9);
+  }
+
+  /* 结算页主按钮放大一档，强化「再来一局」的点击欲 */
+  .btn.big{
+    padding:15px 46px;font-size:14px;letter-spacing:.32em;
+  }
+
+  /* 连击倍率升档时的高亮弹跳（比普通 pop 更明显） */
+  #combo.bump{animation:comboBump .42s cubic-bezier(.2,1.8,.4,1);}
+  @keyframes comboBump{
+    0%{transform:translateX(-50%) scale(1);}
+    35%{transform:translateX(-50%) scale(1.34);background:rgba(255,214,120,.34);}
+    100%{transform:translateX(-50%) scale(1);}
+  }
 </style>
 </head>
 <body>
@@ -454,7 +518,6 @@
         <div class="label">DISTANCE</div>
         <div class="score"><span id="score">00000</span><small>M</small></div>
         <div class="core"><i class="dot" id="coreDot"></i><span>核心颜色</span></div>
-        <div class="pts">SCORE<b id="ptsVal">0</b></div>
       </div>
       <div class="stat right">
         <div class="speed-wrap">
@@ -463,7 +526,7 @@
           <div class="speed-val"><span id="speedVal">54</span> KM/H</div>
         </div>
         <div class="goal-line hide" id="goalLine">目标 <b id="goalVal">0</b> M</div>
-        <div class="best">BEST <span id="bestVal">00000</span></div>
+        <div class="best" id="bestWrap">BEST <span id="bestVal">00000</span></div>
       </div>
     </div>
     <div class="hud-bottom">
@@ -479,6 +542,9 @@
   <!-- 连击 / 阶段提示 -->
   <div id="combo"><b id="comboMult">×1.0</b><span id="comboTxt">连击 0</span></div>
   <div id="stage"><div class="st-num" id="stageNum">STAGE 1</div><div class="st-name" id="stageName">热 身</div></div>
+
+  <!-- 里程碑提示：得分达到 100 / 250 / 500 / 1000 / 2000 时居中弹出 -->
+  <div id="milestone"><b id="msText">100m！</b></div>
 
   <!-- 移动端触控 -->
   <div id="touch">
@@ -559,7 +625,7 @@
   <div class="overlay hide" id="boardScreen">
     <div class="panel">
       <div class="over-title">无 尽 排 行 榜</div>
-      <div class="over-reason">按距离排名，距离相同看得分</div>
+      <div class="over-reason">按分数排名，同分看光点</div>
       <div class="board" id="boardList"></div>
       <div class="board-note" id="boardNote"></div>
       <button class="btn ghost" id="boardBack" type="button">返回主页</button>
@@ -570,16 +636,21 @@
   <div class="overlay hide" id="overScreen">
     <div class="panel">
       <div class="over-title">GAME OVER</div>
-      <div class="over-reason" id="overReason">颜色不匹配</div>
+      <div class="over-reason" id="overReason">颜色不符</div>
+
+      <!-- 破纪录徽章：只有本局超过历史最高时才显示 -->
+      <div class="new-record hide" id="newRecordTag">新纪录！🔥</div>
+
+      <!-- 本次成绩用大字号，历史最高用小字对比 -->
       <div class="over-score"><span id="overScore">00000</span><small>M</small></div>
-      <div class="over-best">BEST <span id="overBest">00000</span></div>
-      <div class="over-best">得分 <span id="overPts">0</span> · 最高连击 <span id="overCombo">0</span></div>
+      <div class="over-best">历史最高 <span id="overBest">00000</span> M</div>
+      <div class="over-gap" id="overGap" hidden></div>
       <div class="over-rank" id="overRank"></div>
       <div class="btns">
-        <button class="btn primary" id="btnRetry" type="button">重 开</button>
+        <button class="btn primary big" id="btnRetry" type="button">再 来 一 局</button>
         <button class="btn ghost" id="btnHome" type="button">返回主页</button>
       </div>
-      <div class="cta">按 R 快速重开</div>
+      <div class="cta">空格 / 回车 快速重开</div>
     </div>
   </div>
 
@@ -589,7 +660,7 @@
       <div class="over-title ok">关 卡 完 成</div>
       <div class="stars" id="clearStars">★★★</div>
       <div class="over-score"><span id="clearDist">00000</span><small>M</small></div>
-      <div class="over-best">得分 <span id="clearPts">0</span> · 最高连击 <span id="clearCombo">0</span></div>
+      <div class="over-best">光点 <span id="clearPts">0</span> · 最高连击 <span id="clearCombo">0</span></div>
       <div class="btns">
         <button class="btn primary" id="btnNext" type="button">下 一 关</button>
         <button class="btn ghost" id="btnAgain" type="button">再 来 一 次</button>
@@ -640,6 +711,13 @@
     barrierH: 1.85,    // 障碍墙高度
     visibleZ: -82,     // 跑道向前生成到多远
     cullZ: 16,         // 超过该 z 的赛道段回收
+
+    /* --- 反馈 / 手感相关 --- */
+    graceAfterRestart: 400,          // 重开后多少毫秒内屏蔽游戏输入（防止手速快导致开局误触）
+    milestoneList: [100, 250, 500, 1000, 2000],   // 里程碑分数（每局每档只触发一次）
+    milestoneHoldMs: 800,            // 里程碑提示停留时长（毫秒）
+    comboRules: [{ count: 5, mult: 2 }, { count: 10, mult: 3 }, { count: 20, mult: 4 }],  // 连击倍率档位
+    newRecordHoldMs: 1200,           // 破纪录后结算页至少停留多久才允许重开
   };
 
   const COLORS = [0x2ed3be, 0xf2ae3c];        // 0 = 青，1 = 金（饱和度提高，远处也一眼可辨）
@@ -1090,6 +1168,7 @@
       holeBottom: false, holeTop: false,
       padLane: -1, padType: 'boost', padZ: 0, padHit: false,
       orbLane: [-1, -1], orbZ: [0, 0], orbTaken: [false, false],
+      comboCounted: false,   // 本段是否已经为「成功躲避」加过连击
     };
   }
 
@@ -1276,6 +1355,7 @@
     s.holeTop = false;
     s.padLane = -1;
     s.padHit = false;
+    s.comboCounted = false;
     s.orbLane[0] = -1;
     s.orbLane[1] = -1;
     s.orbTaken[0] = false;
@@ -1397,13 +1477,21 @@
     best: 0,                // 当前昵称在无尽榜里的最好距离（启动时从榜单读取）
 
     /* --- 玩法扩展 --- */
-    score: 0,               // 收集得分
-    combo: 0,               // 当前连击
+    // 统一主分数（单位：米）：由里程按当前连击倍率累积，HUD / 排行榜 / 里程碑都只看这一个数
+    score: 0,
+    orbs: 0,                // 本局收集到的光点数量（只用于星级与次要信息，不再是成绩）
+    combo: 0,               // 当前连击（连续成功躲避障碍的次数）
     comboMax: 0,            // 本局最高连击
-    comboTimer: 0,          // 连击剩余时间
     boostTime: 0,           // 加速带剩余时间
     stage: 1,               // 当前阶段（随距离提升，解锁新玩法）
     overShown: false,       // 结算页是否已经弹出（弹出前禁止重开，避免误触跳过）
+
+    /* --- 结算 / 手感 --- */
+    prevBest: 0,            // 本局开始前的个人最高（用于判定「新纪录」与「超过上一局」）
+    overReadyAt: 0,         // 允许重开的时间戳；破纪录时会被推后，强制停留
+    inputLockUntil: 0,      // 输入屏蔽截止时间戳（重开后的短暂免疫）
+    milestonesHit: new Set(), // 本局已触发的里程碑，避免重复弹
+    beatPrev: false,        // 本局是否已提示过「超过上一局」
 
     /* --- 模式 --- */
     gameMode: 'endless',    // endless 无尽 / campaign 闯关
@@ -1482,21 +1570,24 @@
   const speedFill = $('speedFill');
   const speedVal = $('speedVal');
   const bestVal = $('bestVal');
+  const bestWrap = $('bestWrap');
   const coreDot = $('coreDot');
   const flashEl = $('flash');
   const overReason = $('overReason');
   const overScore = $('overScore');
   const overBest = $('overBest');
   const warnEl = $('warn');
-  const ptsVal = $('ptsVal');
   const comboEl = $('combo');
   const comboMult = $('comboMult');
   const comboTxt = $('comboTxt');
   const stageEl = $('stage');
   const stageNum = $('stageNum');
   const stageName = $('stageName');
-  const overPts = $('overPts');
-  const overCombo = $('overCombo');
+  // 里程碑提示 / 破纪录徽章 / 与上一名的差距
+  const msEl = $('milestone');
+  const msText = $('msText');
+  const newRecordTag = $('newRecordTag');
+  const overGap = $('overGap');
 
   bestVal.textContent = String(state.best).padStart(5, '0');
 
@@ -1723,6 +1814,36 @@
     boardCache = dedupeBoard(list).slice(0, 20);
     const idx2 = boardCache.findIndex((r) => boardKeyOf(r) === myBoardKey());
     return idx2 >= 0 ? idx2 + 1 : -2;
+  }
+
+  /**
+   * 查询「上一名」：找分数严格大于自己的最小一条记录。
+   * 返回 { name, dist } 或 null（已登顶 / 无数据 / 查询失败）。
+   * 整个函数用 try/catch 包住，任何异常都静默返回 null，绝不能阻塞结算页。
+   */
+  async function fetchPrevRank(myBest) {
+    try {
+      if (cloudClient) {
+        // 云端只读需要登录态；未登录时没有自己的名次，直接当作无数据
+        if (!authSession) return null;
+        const { data, error } = await cloudClient
+          .from('scores')
+          .select('name,dist')
+          .gt('dist', myBest)
+          .order('dist', { ascending: true })
+          .limit(1);
+        if (error) throw error;
+        return (data && data[0]) || null;
+      }
+      // 本地榜单：boardCache 已按 dist 降序，取第一个比自己高的即可
+      let best = null;
+      for (const r of boardCache) {
+        if (r.dist > myBest && (!best || r.dist < best.dist)) best = r;
+      }
+      return best;
+    } catch (e) {
+      return null;
+    }
   }
 
   /* 页面切换：只显示一个覆盖层，传 null 表示全部隐藏（进入游戏） */
@@ -2003,7 +2124,7 @@
 
     const head = document.createElement('div');
     head.className = 'board-row head';
-    head.innerHTML = '<div>#</div><div>玩家</div><div>距离</div><div>得分</div>';
+    head.innerHTML = '<div>#</div><div>玩家</div><div>分数</div><div>光点</div>';
     boardList.appendChild(head);
 
     // 自己的那一行高亮：优先按账号 ID 匹配，本地模式退回昵称
@@ -2035,6 +2156,7 @@
   /** SHIFT：翻转重力 */
   function flipGravity() {
     if (state.mode !== 'playing') return;
+    if (performance.now() < state.inputLockUntil) return;   // 重开后的短暂输入屏蔽
     state.gravity *= -1;
     state.targetY = state.gravity * BALL_REST_Y;
     state.squash = -0.22;    // 起跳瞬间轻微拉长，落地再压扁
@@ -2045,6 +2167,7 @@
   /** SPACE：切换颜色 */
   function toggleColor() {
     if (state.mode !== 'playing') return;
+    if (performance.now() < state.inputLockUntil) return;   // 重开后的短暂输入屏蔽
     state.colorIdx = 1 - state.colorIdx;
     applyColor(state.colorIdx);
     sfxColor();
@@ -2053,43 +2176,65 @@
   /* ==========================================================
      十一之二、玩法：收集光点 / 连击 / 阶段
      ========================================================== */
-  const comboMultiplier = () => 1 + Math.min(state.combo, 20) * 0.1;
 
-  /** 刷新得分与连击 HUD */
-  function refreshPointsUI() {
-    ptsVal.textContent = String(state.score);
+  /** 当前连击倍率：按 CONFIG.comboRules 的档位取最高一档 */
+  function comboMultiplier() {
+    let mult = 1;
+    for (const r of CFG.comboRules) {
+      if (state.combo >= r.count) mult = r.mult;
+    }
+    return mult;
+  }
+
+  let lastComboMult = 1;   // 上一次显示的倍率，用于判断「升档」并触发 HUD 高亮动画
+
+  /** 刷新连击 HUD；倍率变化时数字会高亮弹一下 */
+  function refreshComboUI() {
+    const mult = comboMultiplier();
     if (state.combo >= 2) {
       comboEl.classList.add('on');
-      comboMult.textContent = '×' + comboMultiplier().toFixed(1);
+      comboMult.textContent = '×' + mult.toFixed(1);
       comboTxt.textContent = '连击 ' + state.combo;
+      if (mult !== lastComboMult) {
+        comboEl.classList.remove('bump');
+        void comboEl.offsetWidth;     // 强制重排以重启动画
+        comboEl.classList.add('bump');
+      }
     } else {
       comboEl.classList.remove('on');
     }
+    lastComboMult = mult;
   }
 
-  /** 吃到光点：加分、累积连击、让提示弹一下 */
-  function pickOrb() {
+  /** 成功躲避一次障碍：连击 +1，并检查是否升档 */
+  function addCombo() {
+    const before = comboMultiplier();
     state.combo++;
-    state.comboTimer = 5;          // 5 秒内没再吃到就断连击
     if (state.combo > state.comboMax) state.comboMax = state.combo;
-    state.score += Math.round(10 * comboMultiplier());
-    refreshPointsUI();
+    refreshComboUI();
+
+    if (comboMultiplier() > before) {
+      // 倍率升档：短促上扬音，配合 HUD 高亮
+      tone(620, 0.12, 'square', 0.05, 1240);
+      setTimeout(() => tone(930, 0.14, 'square', 0.045, 1500), 90);
+    }
+  }
+
+  /** 连击归零：撞墙 / 颜色不符时立即调用 */
+  function resetCombo() {
+    state.combo = 0;
+    refreshComboUI();
+  }
+
+  /** 吃到光点：只累计光点数（用于星级），成绩完全由里程决定 */
+  function pickOrb() {
+    state.orbs++;
 
     comboEl.classList.remove('pop');
     void comboEl.offsetWidth;     // 强制重排以重启动画
     comboEl.classList.add('pop');
 
-    tone(880 + Math.min(state.combo, 12) * 55, 0.09, 'triangle', 0.045, 1300);
-  }
-
-  /** 连击超时衰减：长时间没吃到光点就清零 */
-  function tickCombo(dt) {
-    if (state.combo <= 0) return;
-    state.comboTimer -= dt;
-    if (state.comboTimer <= 0) {
-      state.combo = 0;
-      refreshPointsUI();
-    }
+    tone(880 + Math.min(state.orbs, 12) * 55, 0.09, 'triangle', 0.045, 1300);
   }
 
   const STAGE_NAMES = ['热 身', '断 裂', '加 速', '弹 跳', '极 限'];
@@ -2102,6 +2247,41 @@
     stageEl.classList.add('on');
     clearTimeout(stageTimer);
     stageTimer = setTimeout(() => stageEl.classList.remove('on'), 1800);
+  }
+
+  /* ---------- 里程碑提示 ---------- */
+  let milestoneTimer = 0;
+
+  /** 在屏幕正中央弹一条提示（约 0.8 秒后自动淡出） */
+  function showMilestone(text) {
+    msText.textContent = text;
+    msEl.classList.remove('on');
+    void msEl.offsetWidth;        // 强制重排，保证连续触发时动画能重播
+    msEl.classList.add('on');
+    clearTimeout(milestoneTimer);
+    milestoneTimer = setTimeout(() => msEl.classList.remove('on'), CFG.milestoneHoldMs);
+
+    // 轻微闪光 + 上扬音效（不用全屏红闪，避免遮挡画面）
+    flashEl.classList.add('soft');
+    setTimeout(() => flashEl.classList.remove('soft'), 220);
+    tone(920, 0.1, 'triangle', 0.045, 1380);
+    setTimeout(() => tone(1380, 0.12, 'triangle', 0.04, 1840), 85);
+  }
+
+  /** 每帧检查里程碑与「超过上一局」；每档每局只触发一次 */
+  function checkMilestones() {
+    const s = Math.floor(state.score);
+    for (const m of CFG.milestoneList) {
+      if (s >= m && !state.milestonesHit.has(m)) {
+        state.milestonesHit.add(m);
+        showMilestone(m + 'm！');
+      }
+    }
+    // 分数超过本局开始前的个人最高：额外提示一次
+    if (!state.beatPrev && state.prevBest > 0 && s > state.prevBest) {
+      state.beatPrev = true;
+      showMilestone('超过上一局！');
+    }
   }
 
   /** 找到小球所在（z=0）的赛道段 */
@@ -2124,7 +2304,7 @@
 
     const trackColor = state.gravity < 0 ? seg.colorBottom : seg.colorTop;
     if (trackColor !== state.colorIdx) {
-      die('颜色不匹配');
+      die('颜色不符');
       return false;
     }
     return true;
@@ -2155,13 +2335,20 @@
     state.safeCount = 6;
     state.mismatchTime = 0;
     state.score = 0;
+    state.orbs = 0;
     state.combo = 0;
     state.comboMax = 0;
-    state.comboTimer = 0;
     state.boostTime = 0;
+    state.milestonesHit.clear();   // 里程碑每局重新计
+    state.beatPrev = false;
+    state.overReadyAt = 0;
     warnEl.classList.remove('on');
     stageEl.classList.remove('on');
     comboEl.classList.remove('on');
+    msEl.classList.remove('on');
+    newRecordTag.classList.add('hide');
+    overGap.hidden = true;
+    overGap.textContent = '';
 
     ballSprite.position.set(0, state.ballY, 0);
     ballSprite.scale.set(CFG.ballR * 2, CFG.ballR * 2, 1);
@@ -2185,9 +2372,11 @@
 
     // HUD 复位
     scoreEl.textContent = '00000';
-    ptsVal.textContent = '0';
     speedVal.textContent = String(Math.round(CFG.baseSpeed * 3.6));
     speedFill.style.width = '6%';
+    bestWrap.classList.remove('hot');
+    lastComboMult = 1;
+    refreshComboUI();
 
     // 闯关模式在 HUD 上显示目标距离
     if (state.level) {
@@ -2209,14 +2398,20 @@
     state.levelId = state.level ? state.level.id : 0;
     state.stage = state.level ? state.level.stage : 1;   // 闯关按关卡解锁机制
     state.best = playerBest();
+    // 记下开局前的历史最高：本局结束后用来判断「新纪录」和「超过上一局」
+    state.prevBest = state.best;
 
     resetGame();
     state.mode = 'playing';
     state.overShown = false;
+    // 重开后短暂屏蔽输入，避免玩家按重开键的手速连带触发 SHIFT / SPACE
+    state.inputLockUntil = performance.now() + CFG.graceAfterRestart;
 
     clearTimeout(overTimer);      // 取消上一局还没弹出的结算页
     clearTimeout(clearTimer);
     overRank.textContent = '';
+    overGap.hidden = true;
+    newRecordTag.classList.add('hide');
     bestVal.textContent = String(state.best).padStart(5, '0');
     showScreen(null);             // 隐藏所有覆盖层
   }
@@ -2231,9 +2426,9 @@
     state.overShown = false;
 
     const lv = state.level;
-    const dist = Math.floor(state.distance);
-    // 星级只看收集得分：通关 1 星，得分达标 2 / 3 星
-    const stars = state.score >= lv.target * 0.9 ? 3 : (state.score >= lv.target * 0.5 ? 2 : 1);
+    const dist = Math.floor(state.score);   // 统一主分数（米）
+    // 星级只看本局收集到的光点数量（成绩已统一为分数，不再参与星级判定）
+    const stars = state.orbs >= lv.target * 0.09 ? 3 : (state.orbs >= lv.target * 0.045 ? 2 : 1);
 
     const p = loadProgress();
     p.stars = p.stars || {};
@@ -2247,7 +2442,7 @@
     btnNext.textContent = next ? '下 一 关' : '已 全 部 通 关';
 
     clearDist.textContent = String(dist).padStart(5, '0');
-    clearPts.textContent = String(state.score);
+    clearPts.textContent = String(state.orbs);
     clearCombo.textContent = String(state.comboMax);
     clearStars.innerHTML = '★'.repeat(stars) +
       '<span class="off">' + '★'.repeat(3 - stars) + '</span>';
@@ -2291,14 +2486,17 @@
     state.squash = 1;
     state.squashVel = 0;
     warnEl.classList.remove('on');
+    resetCombo();              // 撞击 / 颜色不符：连击立即归零
 
-    const score = Math.floor(state.distance);
+    const score = Math.floor(state.score);
+    const prevBest = state.prevBest;                    // 本局开始前的历史最高
+    const isNewRecord = score > prevBest;               // 本局是否破纪录
     if (score > state.best) state.best = score;
 
     // 只有无尽模式进排行榜；闯关模式只记通关进度
     // 上传是异步的，先把 Promise 拿到手，等结算页弹出后再把名次填进去
     const recordPromise = state.gameMode === 'endless'
-      ? submitRecord(score, state.score, state.comboMax)
+      ? submitRecord(score, state.orbs, state.comboMax)
       : Promise.resolve(0);
 
     sfxCrash();
@@ -2311,31 +2509,60 @@
       // 这段时间内玩家可能已经重开了，此时不能再弹出结算页
       if (state.mode !== 'dead') return;
 
+      // 本次成绩用大字，历史最高用小字对比
       overReason.textContent = reason;
       overScore.textContent = String(score).padStart(5, '0');
-      overBest.textContent = String(state.best).padStart(5, '0');
-      overPts.textContent = String(state.score);
-      overCombo.textContent = String(state.comboMax);
+      overBest.textContent = String(prevBest).padStart(5, '0');
       bestVal.textContent = String(state.best).padStart(5, '0');
+
+      // 破纪录：显示徽章 + 闪光 + 音效，并把允许重开的时间推后
+      newRecordTag.classList.toggle('hide', !isNewRecord);
+      state.overReadyAt = isNewRecord ? performance.now() + CFG.newRecordHoldMs : 0;
+      if (isNewRecord) {
+        flashEl.classList.add('soft');
+        setTimeout(() => flashEl.classList.remove('soft'), 260);
+        tone(784, 0.14, 'triangle', 0.05, 1046);
+        setTimeout(() => tone(1046, 0.18, 'triangle', 0.05, 1568), 130);
+        setTimeout(() => tone(1568, 0.24, 'triangle', 0.045, 2093), 270);
+      }
+
       state.overShown = true;
       showScreen('overScreen');
 
       // 成绩上传结果异步回填，不阻塞结算页
       overRank.textContent = state.gameMode === 'endless' ? '成绩上传中…' : '闯关模式不进入排行榜';
-      if (state.gameMode === 'endless') {
-        recordPromise.then((rank) => {
-          if (rank > 0) overRank.textContent = '本次排名 第 ' + rank + ' 名';
-          else if (rank === -2) overRank.textContent = '已提交，未进入前 20 名';
-          else if (rank === -1) overRank.textContent = '成绩上传失败，请检查网络';
-          else overRank.textContent = '';
-        }).catch(() => { overRank.textContent = '成绩上传失败'; });
-      }
+      overGap.hidden = true;
+      overGap.textContent = '';
+
+      if (state.gameMode !== 'endless') return;
+
+      recordPromise.then(async (rank) => {
+        if (rank > 0) overRank.textContent = '本次排名 第 ' + rank + ' 名';
+        else if (rank === -2) overRank.textContent = '已提交，未进入前 20 名';
+        else if (rank === -1) overRank.textContent = '成绩上传失败，请检查网络';
+        else overRank.textContent = '';
+
+        // 「距离上一名还差」：未登录 / 没进榜 / 查询失败都静默隐藏，绝不影响结算页
+        if (rank <= 0) return;
+        if (rank === 1) {
+          overGap.textContent = '你已登顶';
+          overGap.hidden = false;
+          return;
+        }
+        const myBest = Math.max(playerBest(), score);
+        const prev = await fetchPrevRank(myBest);
+        if (!prev) return;
+        const diff = Math.max(1, Math.round(prev.dist - myBest));
+        overGap.textContent = '上一名「' + prev.name + '」 ' + prev.dist + ' M · 还差 ' + diff + ' 分';
+        overGap.hidden = false;
+      }).catch(() => { overRank.textContent = '成绩上传失败'; });
     }, 620);
   }
 
-  /** 重新开始（仅在结算页出现后可用） */
+  /** 重新开始（仅在结算页出现后、且破纪录的强制停留结束之后可用） */
   function restartGame() {
     if (state.mode !== 'dead' || !state.overShown) return;
+    if (performance.now() < state.overReadyAt) return;   // 破纪录时至少停留 1.2 秒
     startGame(state.gameMode, state.levelId);
   }
 
@@ -2358,7 +2585,11 @@
     const spd = state.speed * (state.boostTime > 0 ? 1.38 : 1);
 
     if (playing) {
+      // distance 是物理里程，只用于生成节奏与阶段解锁，不受倍率影响
       state.distance += spd * dt;
+      // score 是统一主分数（米）：里程按当前连击倍率累积，HUD / 排行榜 / 里程碑都看它
+      state.score += spd * dt * comboMultiplier();
+      checkMilestones();
 
       if (state.gameMode === 'endless') {
         // 每 400 米进入新阶段，解锁新的玩法元素
@@ -2367,8 +2598,8 @@
           state.stage = st;
           showStage(st);
         }
-      } else if (state.level && state.distance >= state.level.target) {
-        // 闯关模式跑满目标距离即通关
+      } else if (state.level && state.score >= state.level.target) {
+        // 闯关模式跑满目标分数即通关（目标线与 HUD 显示的是同一个数值）
         winLevel();
         return;
       }
@@ -2454,7 +2685,7 @@
       if (seg) {
         /* 4.0 断裂跑道：小球所在层整段没有跑道 → 直接坠落 */
         if (state.gravity < 0 ? seg.holeBottom : seg.holeTop) {
-          die('跑道断裂');
+          die('跌落');   // 所在层整段没有跑道 → 直接坠落
           return;
         }
 
@@ -2479,11 +2710,17 @@
       }
 
       /* 4.4 光点收集 / 加速带 / 弹跳板 */
-      tickCombo(dt);
-
       for (let i = 0; i < segments.length; i++) {
         const s = segments[i];
         const gz = s.group.position.z;
+
+        // 成功躲避：带障碍 / 断裂的赛道段完全过球后，连击 +1（每段只计一次）
+        if (!s.comboCounted
+            && (s.barrierBottom || s.barrierTop || s.holeBottom || s.holeTop)
+            && gz > Math.max(2.0, Math.min(s.len * 0.42, 4.2)) / 2 + CFG.ballR) {
+          s.comboCounted = true;
+          addCombo();
+        }
 
         // 收集光点：掠过小球时按所在层判定
         for (let k = 0; k < 2; k++) {
@@ -2553,10 +2790,13 @@
     }
 
     /* --- 6. HUD --- */
-    const dist = Math.floor(state.distance);
+    // 主分数只有这一个数字：距离 × 连击倍率
+    const dist = Math.floor(state.score);
     if (dist !== state.dispScore) {
       state.dispScore = dist;
       scoreEl.textContent = String(dist).padStart(5, '0');
+      // 本局已经超过历史最高：HUD 的 BEST 点亮，方便实时对比
+      bestWrap.classList.toggle('hot', state.best > 0 && dist > state.best);
     }
     const pct = Math.min(100, 6 + (spd - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed) * 94);
     speedFill.style.width = pct.toFixed(1) + '%';
@@ -2583,9 +2823,9 @@
     // 主页 / 关卡页 / 排行榜：交给按钮处理，键盘不接管
     if (state.mode === 'ready') return;
 
-    // 结算页：R 重开，Esc 回主页
+    // 结算页：R / 空格 / 回车 重开，Esc 回主页
     if (state.mode === 'dead') {
-      if (e.code === 'KeyR') restartGame();
+      if (e.code === 'KeyR' || e.code === 'Space' || e.code === 'Enter') restartGame();
       else if (e.code === 'Escape') goHome();
       return;
     }
