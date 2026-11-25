@@ -503,6 +503,68 @@
     35%{transform:translateX(-50%) scale(1.34);background:rgba(255,214,120,.34);}
     100%{transform:translateX(-50%) scale(1);}
   }
+
+  /* ============ 道具增益条 / 复活次数 ============ */
+
+  /* 复活次数：跟 core dot 并排，心形加一点小光效 */
+  .lives{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:11px;letter-spacing:.14em;color:#ffd3e0;
+    text-shadow:0 0 10px rgba(255,120,160,.55);
+  }
+  .lives i.heart{font-style:normal;color:#ff6a8a;font-size:13px;filter:drop-shadow(0 0 6px rgba(255,90,120,.9));}
+
+  /* 增益状态条：放在 HUD 顶部之下、combo 之上 */
+  .hud-buffs{
+    position:fixed;top:78px;left:50%;transform:translateX(-50%);
+    display:flex;gap:10px;z-index:6;pointer-events:none;
+  }
+  .buff{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:5px 14px;border-radius:999px;
+    font-size:11px;font-weight:700;letter-spacing:.12em;
+    border:1px solid currentColor;background:rgba(4,8,12,.72);
+    backdrop-filter:blur(6px);
+  }
+  .buff-shield{
+    color:#8dd0ff;
+    box-shadow:0 0 22px rgba(141,208,255,.38),inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .buff-magnet{
+    color:#ffd27a;
+    box-shadow:0 0 22px rgba(255,210,122,.38),inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  .buff b{color:#fff;margin-left:2px;}
+
+  /* 拾取道具提示：屏幕正中偏下，约 1.2 秒淡出 */
+  #pickupToast{
+    position:fixed;left:50%;bottom:28%;z-index:9;pointer-events:none;
+    transform:translateX(-50%) translateY(12px);
+    opacity:0;transition:opacity .22s ease,transform .22s cubic-bezier(.2,1.6,.4,1);
+  }
+  #pickupToast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+  #pickupToast b{
+    display:inline-block;font-size:17px;font-weight:800;letter-spacing:.14em;
+    padding:8px 22px;border-radius:999px;background:rgba(4,8,12,.78);
+    border:1px solid rgba(141,208,255,.5);
+    box-shadow:0 0 26px rgba(141,208,255,.35),inset 0 1px 0 rgba(255,255,255,.12);
+    color:#e7f7ff;text-shadow:0 0 14px rgba(141,208,255,.7);
+  }
+
+  /* 勋章解锁 toast：比道具提示更大一档，金色描边 */
+  #medalToast{
+    position:fixed;left:50%;bottom:36%;z-index:10;pointer-events:none;
+    transform:translateX(-50%) translateY(18px) scale(.9);
+    opacity:0;transition:opacity .26s ease,transform .26s cubic-bezier(.2,1.6,.4,1);
+  }
+  #medalToast.on{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}
+  #medalToast b{
+    display:inline-block;font-size:22px;font-weight:800;letter-spacing:.14em;
+    padding:10px 30px;border-radius:999px;background:rgba(8,6,2,.86);
+    border:1px solid rgba(255,210,120,.75);
+    box-shadow:0 0 36px rgba(255,210,120,.55),inset 0 1px 0 rgba(255,255,255,.2);
+    color:#fff0c6;text-shadow:0 0 18px rgba(255,180,80,.9);
+  }
 </style>
 </head>
 <body>
@@ -518,6 +580,10 @@
         <div class="label">DISTANCE</div>
         <div class="score"><span id="score">00000</span><small>M</small></div>
         <div class="core"><i class="dot" id="coreDot"></i><span>核心颜色</span></div>
+        <!-- 复活次数：心形图标，无复活时隐藏 -->
+        <div class="lives" id="livesWrap" hidden>
+          <i class="heart">&#9829;</i>×<span id="livesVal">0</span>
+        </div>
       </div>
       <div class="stat right">
         <div class="speed-wrap">
@@ -529,6 +595,13 @@
         <div class="best" id="bestWrap">BEST <span id="bestVal">00000</span></div>
       </div>
     </div>
+
+    <!-- 道具增益状态条：护盾 / 磁吸生效时各占一条，倒计时内自动消失 -->
+    <div class="hud-buffs" id="buffsBar" hidden>
+      <div class="buff buff-shield" id="buffShield" hidden>🛡 护盾 <b id="shieldRemain">0</b>s</div>
+      <div class="buff buff-magnet" id="buffMagnet" hidden>🧲 磁吸 <b id="magnetRemain">0</b>s</div>
+    </div>
+
     <div class="hud-bottom">
       <div class="hint"><span class="key">SHIFT</span> 翻转重力</div>
       <div class="hint"><span class="key">SPACE</span> 切换颜色</div>
@@ -539,8 +612,11 @@
   <!-- 颜色不符提示 -->
   <div id="warn">颜色不符 · 越线即失败</div>
 
-  <!-- 连击 / 阶段提示 -->
-  <div id="combo"><b id="comboMult">×1.0</b><span id="comboTxt">连击 0</span></div>
+  <!-- 道具拾取提示：吃到护盾/复活/磁吸时弹出 -->
+  <div id="pickupToast"><b id="pickupTxt">🛡 护盾激活！</b></div>
+
+  <!-- 勋章解锁提示：结算页或里程碑触发 -->
+  <div id="medalToast"><b id="medalTxt">🏅 里程碑达成！</b></div>
   <div id="stage"><div class="st-num" id="stageNum">STAGE 1</div><div class="st-name" id="stageName">热 身</div></div>
 
   <!-- 里程碑提示：得分达到 100 / 250 / 500 / 1000 / 2000 时居中弹出 -->
@@ -718,6 +794,17 @@
     milestoneHoldMs: 800,            // 里程碑提示停留时长（毫秒）
     comboRules: [{ count: 5, mult: 2 }, { count: 10, mult: 3 }, { count: 20, mult: 4 }],  // 连击倍率档位
     newRecordHoldMs: 1200,           // 破纪录后结算页至少停留多久才允许重开
+
+    /* --- 道具系统 --- */
+    pickupChance: 0.18,              // 每段赛道生成道具的概率（0~1）
+    pickupTypes: ['shield', 'life', 'magnet'], // 三种道具；生成时随机选
+    shieldDurMs: 6000,               // 护盾生效时长（毫秒）
+    magnetDurMs: 8000,               // 磁吸金球生效时长（毫秒）
+    pickupLifeBonus: 1,              // 捡到"复活球"给的复活次数
+    maxLives: 3,                     // 单局复活次数上限（防无限续命）
+
+    /* --- 任务 / 勋章 --- */
+    taskProgressSaveKey: 'sr_tasks', // 任务 / 勋章存档键（localStorage）
   };
 
   const COLORS = [0x2ed3be, 0xf2ae3c];        // 0 = 青，1 = 金（饱和度提高，远处也一眼可辨）
@@ -893,6 +980,10 @@
     unit: new THREE.BoxGeometry(1, 1, 1),     // 通用方块
     padGlow: new THREE.PlaneGeometry(1, 1),   // 踏板辉光面（水平放置，放大踏板光晕）
     padEdge: new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)),  // 踏板白色线框
+
+    /* --- 道具几何体（三种道具共用一个 Octahedron，靠颜色区分） --- */
+    pickupCore: new THREE.OctahedronGeometry(0.45, 0),
+    pickupRing: new THREE.TorusGeometry(0.7, 0.06, 8, 28),  // 旋转光环
   };
 
   // 两种颜色的跑道材质（自发光霓虹；压暗成低调色面，靠边线提亮）
@@ -927,13 +1018,14 @@
   // 加速带（亮金）/ 弹跳板（亮紫）：带白色发光边框纹理 + 提亮颜色，与跑道拉开对比
   const boostMat = new THREE.MeshBasicMaterial({ map: boostPadTex, toneMapped: false });
   const jumpMat = new THREE.MeshBasicMaterial({ map: jumpPadTex, toneMapped: false });
-  // 踏板辉光（叠加混合）：让踏板在远处也有一团光晕，避免融进跑道底色
+  // 踏板辉光（叠加混合）：亮度拉满，让金/紫踏板明显区别于跑道底色
+  // 不再半透明——用户反馈半透明踏板会"融进"跑道，这里改成实感光晕
   const boostGlowMat = new THREE.MeshBasicMaterial({
-    color: 0xffe39a, transparent: true, opacity: 0.7,
+    color: 0xffe39a, transparent: true, opacity: 1.0,
     blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
   });
   const jumpGlowMat = new THREE.MeshBasicMaterial({
-    color: 0xb47bff, transparent: true, opacity: 0.7,
+    color: 0xb47bff, transparent: true, opacity: 1.0,
     blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
   });
   // 踏板白色发光边框线框：强化轮廓，侧视下也能一眼定位踏板
@@ -1152,9 +1244,15 @@
     bSeam.visible = false;
     tSeam.visible = false;
 
+    // 道具：护盾 / 复活球 / 磁吸，每段最多生成一个
+    const pickupCore = new THREE.Mesh(GEO.pickupCore, new THREE.MeshBasicMaterial({ color: 0xff88cc, toneMapped: false }));
+    const pickupRing = new THREE.Mesh(GEO.pickupRing, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, toneMapped: false, side: THREE.DoubleSide }));
+    pickupCore.visible = false;
+    pickupRing.visible = false;
+
     group.add(bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR,
       orbA, orbB, bPad, bPadGlow, bPadFrame, tPad, tPadGlow, tPadFrame,
-      bHoleMark, tHoleMark, bSeam, tSeam);
+      bHoleMark, tHoleMark, bSeam, tSeam, pickupCore, pickupRing);
     scene.add(group);
 
     return {
@@ -1169,6 +1267,9 @@
       padLane: -1, padType: 'boost', padZ: 0, padHit: false,
       orbLane: [-1, -1], orbZ: [0, 0], orbTaken: [false, false],
       comboCounted: false,   // 本段是否已经为「成功躲避」加过连击
+      // 道具：生成在段中点附近，位置按所在层决定
+      pickup: null,          // { type: 'shield'|'life'|'magnet', lane: 0|1, z, taken: false, core, ring }
+      pickupCore, pickupRing,
     };
   }
 
@@ -1315,6 +1416,23 @@
       node.position.set(0, s.orbLane[i] === 0 ? -BALL_REST_Y : BALL_REST_Y, s.orbZ[i]);
       node.scale.setScalar(1.15);
     }
+
+    // --- 道具：护盾蓝 / 复活球粉 / 磁吸金，按 type 给核心上色 + 光环色 ---
+    if (s.pickup && !s.pickup.taken) {
+      const pu = s.pickup;
+      const laneY = pu.lane === 0 ? -BALL_REST_Y : BALL_REST_Y;
+      const col = pu.type === 'shield' ? 0x7ec8ff : pu.type === 'life' ? 0xff7abf : 0xffd27a;
+      s.pickupCore.material.color.setHex(col);
+      s.pickupRing.material.color.setHex(col);
+      s.pickupCore.visible = true;
+      s.pickupRing.visible = true;
+      s.pickupCore.position.set(0, laneY + 0.18, pu.z);
+      s.pickupRing.position.set(0, laneY + 0.18, pu.z);
+      s.pickupRing.rotation.x = Math.PI / 2;  // 光环水平（像飞碟）
+    } else {
+      s.pickupCore.visible = false;
+      s.pickupRing.visible = false;
+    }
   }
 
   /** 规划这一段该出现什么颜色 / 障碍 */
@@ -1360,6 +1478,7 @@
     s.orbLane[1] = -1;
     s.orbTaken[0] = false;
     s.orbTaken[1] = false;
+    s.pickup = null;        // 道具状态在下面 createSegment 里重新生成
 
     const stage = state.stage;
     const armed = !safe && state.time > 2.5;   // 开局 2.5 秒内不刷任何玩法元素
@@ -1421,6 +1540,16 @@
         s.orbLane[1] = lane;                 // 同一层的连串光点，避免必然漏掉
         s.orbZ[1] = s.orbZ[0] - len * 0.2;
       }
+    }
+
+    // 道具：护盾 / 复活球 / 磁吸。18% 概率出现一种（三种等权），避开被障碍封死的层
+    s.pickup = null;
+    if (!safe && !(blockedBottom && blockedTop) && Math.random() < CFG.pickupChance) {
+      let lane = Math.random() < 0.5 ? 0 : 1;
+      if (lane === 0 && blockedBottom) lane = 1;
+      else if (lane === 1 && blockedTop) lane = 0;
+      const type = CFG.pickupTypes[Math.floor(Math.random() * CFG.pickupTypes.length)];
+      s.pickup = { type, lane, z: (Math.random() * 0.5 - 0.2) * len, taken: false };
     }
 
     layoutSegment(s);
@@ -1486,6 +1615,11 @@
     stage: 1,               // 当前阶段（随距离提升，解锁新玩法）
     overShown: false,       // 结算页是否已经弹出（弹出前禁止重开，避免误触跳过）
 
+    /* --- 复活 / 道具增益 --- */
+    lives: 0,                   // 本局剩余复活次数（任务 / 道具增加，上限 CFG.maxLives）
+    shieldUntil: 0,             // 护盾到期时间戳（ms）。护盾期间撞墙/缺口免疫，颜色不符依然会死
+    magnetUntil: 0,             // 磁吸金球到期时间戳。生效时附近金色光点会被"吸"到小球上
+
     /* --- 结算 / 手感 --- */
     prevBest: 0,            // 本局开始前的个人最高（用于判定「新纪录」与「超过上一局」）
     overReadyAt: 0,         // 允许重开的时间戳；破纪录时会被推后，强制停留
@@ -1539,6 +1673,23 @@
 
   const sfxColor = () => tone(720, 0.09, 'triangle', 0.05, 1120);
   const sfxFlip = () => tone(180, 0.16, 'sawtooth', 0.035, 540);
+  // 护盾吸收：高频上扬 + 低频撞击
+  function sfxShield() {
+    tone(240, 0.18, 'square', 0.05, 120);
+    setTimeout(() => tone(1180, 0.2, 'triangle', 0.05, 1680), 60);
+  }
+  // 复活：三连上行
+  function sfxRevive() {
+    tone(660, 0.12, 'triangle', 0.05, 990);
+    setTimeout(() => tone(990, 0.12, 'triangle', 0.05, 1320), 90);
+    setTimeout(() => tone(1320, 0.18, 'triangle', 0.05, 1760), 180);
+  }
+  // 拾取道具：清脆上扬，不同道具用不同起音
+  function sfxPickup(type) {
+    const base = type === 'shield' ? 520 : type === 'life' ? 760 : 620;
+    tone(base, 0.09, 'triangle', 0.06, base * 1.8);
+    setTimeout(() => tone(base * 1.5, 0.11, 'triangle', 0.05, base * 2.4), 60);
+  }
 
   /** 撞击音：低频下坠 + 噪声爆裂 */
   function sfxCrash() {
@@ -1588,6 +1739,21 @@
   const msText = $('msText');
   const newRecordTag = $('newRecordTag');
   const overGap = $('overGap');
+
+  // 复活次数 / 道具增益 HUD
+  const livesWrap = $('livesWrap');
+  const livesVal = $('livesVal');
+  const buffsBar = $('buffsBar');
+  const buffShield = $('buffShield');
+  const buffMagnet = $('buffMagnet');
+  const shieldRemain = $('shieldRemain');
+  const magnetRemain = $('magnetRemain');
+  const pickupToast = $('pickupToast');
+  const pickupTxt = $('pickupTxt');
+
+  // 勋章解锁提示
+  const medalToast = $('medalToast');
+  const medalTxt = $('medalTxt');
 
   bestVal.textContent = String(state.best).padStart(5, '0');
 
@@ -2237,6 +2403,154 @@
     tone(880 + Math.min(state.orbs, 12) * 55, 0.09, 'triangle', 0.045, 1300);
   }
 
+  /** 拾取道具：三种效果互斥叠加，护盾和磁吸可以并存，复活球叠加 lives */
+  function applyPickup(type) {
+    const now = performance.now();
+    sfxPickup(type);
+    // 本局拾取计数：任务 / 勋章统计用
+    sessionPickupCount++;
+
+    let label = '';
+    if (type === 'shield') {
+      state.shieldUntil = now + CFG.shieldDurMs;
+      label = '🛡 护盾激活！';
+    } else if (type === 'magnet') {
+      state.magnetUntil = now + CFG.magnetDurMs;
+      label = '🧲 磁吸激活！';
+    } else if (type === 'life') {
+      // 复活球：加上限到 lives，上限 CFG.maxLives（防无限续命）
+      state.lives = Math.min(CFG.maxLives, state.lives + CFG.pickupLifeBonus);
+      label = '♥ 获得复活机会！';
+      tone(720, 0.12, 'triangle', 0.05, 1080);
+      setTimeout(() => tone(1080, 0.14, 'triangle', 0.05, 1440), 85);
+    }
+
+    // 道具拾取 HUD 提示（约 1.2 秒自动消失）
+    pickupTxt.textContent = label;
+    pickupToast.classList.add('on');
+    clearTimeout(pickupToast._t);
+    pickupToast._t = setTimeout(() => pickupToast.classList.remove('on'), 1100);
+
+    // lives 变化也要同步 HUD
+    refreshLivesUI();
+  }
+
+  /** 刷新 HUD：复活次数 / 护盾倒计时 / 磁吸倒计时 */
+  function refreshLivesUI() {
+    livesVal.textContent = String(state.lives);
+    livesWrap.hidden = state.lives <= 0;
+  }
+  function refreshBuffsUI() {
+    const now = performance.now();
+    const shieldLeft = Math.max(0, Math.ceil((state.shieldUntil - now) / 1000));
+    const magnetLeft = Math.max(0, Math.ceil((state.magnetUntil - now) / 1000));
+    const hasShield = shieldLeft > 0;
+    const hasMagnet = magnetLeft > 0;
+    buffsBar.hidden = !hasShield && !hasMagnet;
+    buffShield.hidden = !hasShield;
+    buffMagnet.hidden = !hasMagnet;
+    shieldRemain.textContent = String(shieldLeft);
+    magnetRemain.textContent = String(magnetLeft);
+  }
+
+  /* ==========================================================
+     勋章 / 任务：本地存档，不进 Supabase。
+     达成条件即永久记录，部分任务会奖励复活次数上限 / 护盾道具
+     ========================================================== */
+
+  // 勋章定义：id / 显示名 / emoji / 解锁条件描述 / 触发条件函数（根据本局数据）
+  // check 额外接收 PROGRESS 存档作为第三参，用于"累计类"勋章
+  const MEDALS = [
+    { id: 'm_100',   name: '百米起步',   emoji: '🏃',  desc: '一局内分数达到 100',   check: (s, cur) => cur >= 100    },
+    { id: 'm_500',   name: '半程冲刺',   emoji: '💨',  desc: '一局内分数达到 500',   check: (s, cur) => cur >= 500    },
+    { id: 'm_1000',  name: '千分达成',   emoji: '🏅',  desc: '一局内分数达到 1000',  check: (s, cur) => cur >= 1000   },
+    { id: 'm_2000',  name: '极速狂飙',   emoji: '🏆',  desc: '一局内分数达到 2000',  check: (s, cur) => cur >= 2000   },
+    { id: 'm_combo', name: '连击大师',   emoji: '🔥',  desc: '单局最高连击达到 20',  check: (s, cur) => s.comboMax >= 20 },
+    { id: 'm_record',name: '新纪录猎人', emoji: '🎯',  desc: '达成累计 5 次新纪录',  check: (s, cur, p) => p.newRecordCount >= 5 },
+  ];
+
+  // 任务：每次新赛季或完成后刷新；奖励给 lives 上限 +1 或"本局一开始多一个护盾"
+  // 任务完成时立即发放奖励并把 active 清掉（不会自动刷新，需要玩家点"重置任务"按钮）
+  const TASKS = [
+    { id: 't_run500',  name: '跑满 500 米', reward: '复活次数 +1',
+      check: (s, cur) => cur >= 500, grant: (st) => { st.livesMax += 1; return '复活次数上限 +1'; } },
+    { id: 't_orbs15',  name: '一局吃 15 个光点', reward: '本局初始护盾',
+      check: (s, cur) => s.orbs >= 15, grant: (st) => { st.shieldStart = CFG.shieldDurMs; return '开局自带护盾'; } },
+    { id: 't_combo10', name: '连击到 10 倍', reward: '复活次数 +1',
+      check: (s, cur) => s.comboMax >= 10, grant: (st) => { st.livesMax += 1; return '复活次数上限 +1'; } },
+    { id: 't_pickup3', name: '一局吃 3 个道具', reward: '复活次数 +1',
+      check: (s, cur, p, pk) => pk >= 3, grant: (st) => { st.livesMax += 1; return '复活次数上限 +1'; } },
+  ];
+
+  /** 从 localStorage 读勋章 / 任务进度；没有就返回空对象 */
+  function loadProgressData() {
+    try {
+      const raw = localStorage.getItem(CFG.taskProgressSaveKey);
+      if (!raw) return { medals: {}, newRecordCount: 0, livesMax: 1, shieldStart: 0, tasks: {} };
+      return { medals: {}, newRecordCount: 0, livesMax: 1, shieldStart: 0, tasks: {}, ...JSON.parse(raw) };
+    } catch (e) {
+      return { medals: {}, newRecordCount: 0, livesMax: 1, shieldStart: 0, tasks: {} };
+    }
+  }
+  function saveProgressData(d) {
+    try { localStorage.setItem(CFG.taskProgressSaveKey, JSON.stringify(d)); } catch (e) {}
+  }
+
+  // 内存里的存档，游戏整个 session 共用
+  let PROGRESS = loadProgressData();
+  // 本局拾取的道具数（任务统计用，不在 state 里，避免污染全局）
+  let sessionPickupCount = 0;
+
+  /** 显示勋章 / 任务解锁 toast（约 1.8 秒自动消失） */
+  function showMedalToast(text) {
+    medalTxt.textContent = text;
+    medalToast.classList.add('on');
+    clearTimeout(showMedalToast._t);
+    showMedalToast._t = setTimeout(() => medalToast.classList.remove('on'), 1800);
+    // 上扬提示音，比里程碑更厚重
+    tone(880, 0.14, 'triangle', 0.06, 1320);
+    setTimeout(() => tone(1320, 0.18, 'triangle', 0.055, 1760), 110);
+  }
+
+  /** 在结算页之后检查勋章 + 任务，有新解锁就存档 + 弹 toast */
+  function checkMedalsAndTasks(finalScore, isNewRecord) {
+    PROGRESS = loadProgressData();
+    // 新纪录计数
+    if (isNewRecord) PROGRESS.newRecordCount++;
+
+    // --- 勋章 ---
+    for (const m of MEDALS) {
+      if (PROGRESS.medals[m.id]) continue;
+      if (m.check(state, finalScore, PROGRESS)) {
+        PROGRESS.medals[m.id] = { at: Date.now(), score: finalScore };
+        showMedalToast(m.emoji + ' 勋章解锁：' + m.name);
+      }
+    }
+
+    // --- 任务 ---
+    for (const t of TASKS) {
+      if (PROGRESS.tasks[t.id] && PROGRESS.tasks[t.id].done) continue;
+      if (t.check(state, finalScore, PROGRESS, sessionPickupCount)) {
+        const rewardText = t.grant(PROGRESS);
+        PROGRESS.tasks[t.id] = { done: true, at: Date.now() };
+        showMedalToast('📜 任务完成：' + t.name + ' · ' + rewardText);
+      }
+    }
+
+    saveProgressData(PROGRESS);
+  }
+
+  /** 新一局开始前，把 PROGRESS 里的 livesMax 带入 state.lives；以及 shieldStart 带入 shieldUntil */
+  function applyProgressToStart() {
+    PROGRESS = loadProgressData();
+    sessionPickupCount = 0;
+    // livesMax 是历史任务奖励，resetGame 里先给默认 1，startGame 之后再拉到任务上限
+    CFG.maxLives = Math.max(CFG.maxLives, PROGRESS.livesMax);
+    // 护盾开局即有：shieldStart > 0 时 startGame 里给一个短护盾
+    return PROGRESS.shieldStart;
+  }
+
+
   const STAGE_NAMES = ['热 身', '断 裂', '加 速', '弹 跳', '极 限'];
   let stageTimer = 0;
 
@@ -2339,6 +2653,10 @@
     state.combo = 0;
     state.comboMax = 0;
     state.boostTime = 0;
+    // 复活次数每局重置为 1（任务解锁更多上限；道具在局中可额外叠加）
+    state.lives = 1;
+    state.shieldUntil = 0;
+    state.magnetUntil = 0;
     state.milestonesHit.clear();   // 里程碑每局重新计
     state.beatPrev = false;
     state.overReadyAt = 0;
@@ -2377,6 +2695,9 @@
     bestWrap.classList.remove('hot');
     lastComboMult = 1;
     refreshComboUI();
+    refreshLivesUI();
+    buffsBar.hidden = true;
+    pickupToast.classList.remove('on');
 
     // 闯关模式在 HUD 上显示目标距离
     if (state.level) {
@@ -2402,6 +2723,17 @@
     state.prevBest = state.best;
 
     resetGame();
+
+    // 把历史任务奖励的 lives 上限和开局护盾应用到本局
+    const startShieldMs = applyProgressToStart();
+    if (startShieldMs > 0) {
+      state.shieldUntil = performance.now() + startShieldMs;
+      showMilestone('🛡 任务奖励：开局护盾');
+    }
+    // lives 上限：resetGame 给了 1，这里按任务奖励的 livesMax 拉上去（上限 CFG.maxLives）
+    state.lives = Math.max(state.lives, Math.min(CFG.maxLives, PROGRESS.livesMax || 1));
+    refreshLivesUI();
+
     state.mode = 'playing';
     state.overShown = false;
     // 重开后短暂屏蔽输入，避免玩家按重开键的手速连带触发 SHIFT / SPACE
@@ -2477,9 +2809,45 @@
     showScreen('startScreen');
   }
 
-  /** 失败 */
+  /** 失败
+   *   - 护盾生效时，撞墙 / 跌落会被吸收（颜色不符依然会直接死）
+   *   - 有复活次数时扣一次复活，重置状态回到 playing，弹出提示
+   *   - 都不满足才进真正的结算页
+   */
   function die(reason) {
     if (state.mode !== 'playing') return;
+
+    const now = performance.now();
+    // 护盾：只对「撞上障碍 / 跌落」这种物理伤害免疫，颜色不符必须死
+    const isPhysical = reason === '撞上障碍' || reason === '跌落';
+    if (isPhysical && now < state.shieldUntil) {
+      // 护盾吸收：给一个小震 + 音效，继续玩
+      state.shieldUntil = 0;   // 用完就没了
+      state.shake = 0.6;
+      sfxShield();
+      flashEl.classList.add('soft');
+      setTimeout(() => flashEl.classList.remove('soft'), 220);
+      showMilestone('🛡 护盾吸收！');
+      return;
+    }
+
+    // 复活：颜色不符也可以用，但复活后颜色会被重置为安全状态（跟落点一致）
+    if (state.lives > 0) {
+      state.lives--;
+      // 回到「刚才那个安全位置」：让玩家不立刻再死
+      state.ballVel = 0;
+      state.squash = 0;
+      state.squashVel = 0;
+      state.shake = 0.6;
+      state.mode = 'playing';
+      state.inputLockUntil = now + 800;   // 复活后短暂免误触
+      sfxRevive();
+      flashEl.classList.add('soft');
+      setTimeout(() => flashEl.classList.remove('soft'), 260);
+      showMilestone('♥ 复活！');
+      return;
+    }
+
     state.mode = 'dead';
     state.overShown = false;   // 结算页弹出前不允许重开
     state.shake = 1;
@@ -2528,6 +2896,10 @@
 
       state.overShown = true;
       showScreen('overScreen');
+
+      // 结算后立刻检查勋章 + 任务。奖牌 / 任务解锁会弹金色 toast，
+      // 不阻塞排行榜上传（上传还在走 Promise）
+      checkMedalsAndTasks(score, isNewRecord);
 
       // 成绩上传结果异步回填，不阻塞结算页
       overRank.textContent = state.gameMode === 'endless' ? '成绩上传中…' : '闯关模式不进入排行榜';
@@ -2755,6 +3127,54 @@
             }
           }
         }
+
+        // --- 道具碰撞：拾取三种道具，直接改变 state ---
+        if (s.pickup && !s.pickup.taken) {
+          const pu = s.pickup;
+          const wz = gz + pu.z;
+          const py = pu.lane === 0 ? -BALL_REST_Y : BALL_REST_Y + 0.18;
+
+          // 磁吸生效时：金球会被"吸"向小球。这里道具本身保持原样，
+          // 磁吸逻辑单独在下面（对 orbs 做位置修正）
+          if (Math.abs(wz) < 1.2 && Math.abs(state.ballY - py) < 1.3) {
+            pu.taken = true;
+            s.pickupCore.visible = false;
+            s.pickupRing.visible = false;
+            applyPickup(pu.type);
+          } else if (wz > 1.8) {
+            // 道具已掠过小球，丢弃
+            pu.taken = true;
+            s.pickupCore.visible = false;
+            s.pickupRing.visible = false;
+          }
+        }
+
+        // 道具旋转动画：核心每帧转，光环慢慢翻（让道具远看也有生命力）
+        if (s.pickup && s.pickupCore.visible) {
+          s.pickupCore.rotation.y += dt * 4.0;
+          s.pickupCore.rotation.x += dt * 1.6;
+          s.pickupRing.rotation.z += dt * 2.2;
+        }
+
+        // 磁吸金球：磁吸生效时，附近未吃的金球在各自层被"吸向"小球（orb 的 z 往 0 拉）
+        if (performance.now() < state.magnetUntil) {
+          for (let k = 0; k < 2; k++) {
+            if (s.orbLane[k] < 0 || s.orbTaken[k]) continue;
+            const wz = gz + s.orbZ[k];
+            if (Math.abs(wz) < 4.0) {
+              // 往 wz=0 方向拉，越近越猛
+              s.orbZ[k] -= wz * Math.min(1, dt * 5.5);
+              s.orbNodes[k].position.z = gz + s.orbZ[k];
+              // 吸到范围内就直接吃
+              const oy = s.orbLane[k] === 0 ? -BALL_REST_Y : BALL_REST_Y;
+              if (Math.abs(s.orbZ[k]) < 0.9 && Math.abs(state.ballY - oy) < 1.4) {
+                s.orbTaken[k] = true;
+                s.orbNodes[k].visible = false;
+                pickOrb();
+              }
+            }
+          }
+        }
       }
 
       /* 4.3 颜色不符警示 */
@@ -2801,6 +3221,8 @@
     const pct = Math.min(100, 6 + (spd - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed) * 94);
     speedFill.style.width = pct.toFixed(1) + '%';
     speedVal.textContent = String(Math.round(spd * 3.6));
+    // 增益状态倒计时每帧刷新（护盾/磁吸可能正好到期）
+    refreshBuffsUI();
   }
 
   /* ==========================================================
