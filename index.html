@@ -312,6 +312,8 @@
     .mode-desc{margin-top:5px;font-size:10px;}
     .mode-meta{margin-top:8px;font-size:9.5px;}
     #openBoard{margin-top:10px;padding:8px 22px;font-size:11px;}
+    .home-links{margin-top:10px;gap:8px;}
+    .home-links .btn{padding:8px 10px;font-size:11px;}
     .rules{margin:14px auto 0;gap:6px;max-width:540px;}
     .rule{padding:6px 11px;font-size:11px;line-height:1.5;}
     .over-title{font-size:clamp(26px,6vw,44px);}
@@ -393,7 +395,9 @@
   .mode-name{font-size:14px;font-weight:700;letter-spacing:.2em;color:#eafcff;}
   .mode-desc{margin-top:7px;font-size:10.5px;letter-spacing:.08em;color:rgba(175,215,210,.55);}
   .mode-meta{margin-top:12px;font-size:10px;letter-spacing:.14em;color:rgba(242,190,110,.85);}
-  #openBoard{margin-top:14px;width:100%;}
+  /* 主页底部两个入口（排行榜 / 成就）并排显示 */
+  .home-links{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+  .home-links .btn{width:100%;}
 
   /* ============ 关卡列表 ============ */
   .levels{display:grid;gap:9px;margin:20px 0 18px;max-height:46vh;overflow:auto;}
@@ -430,6 +434,34 @@
   .board-pts{font-size:11px;color:rgba(255,214,150,.8);font-variant-numeric:tabular-nums;}
   .board-empty{padding:26px 0;text-align:center;font-size:11px;letter-spacing:.2em;color:rgba(160,210,205,.4);}
   .board-note{margin:-6px 0 14px;text-align:center;font-size:9.5px;letter-spacing:.16em;color:rgba(160,210,205,.38);}
+
+  /* ============ 成就 / 里程碑 ============ */
+  .medal-list{margin:18px 0;display:grid;gap:8px;max-height:52vh;overflow:auto;text-align:left;}
+  .medal-row{
+    display:flex;align-items:center;gap:12px;
+    padding:11px 13px;border-radius:12px;
+    background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.012));
+    border:1px solid rgba(255,255,255,.06);
+  }
+  /* 已解锁：金色描边 + 暖色底，和图标的灰暗形成对比 */
+  .medal-row.on{
+    border-color:rgba(242,190,110,.45);
+    background:linear-gradient(90deg,rgba(242,174,60,.16),rgba(242,174,60,.035));
+    box-shadow:0 0 22px rgba(242,174,60,.14);
+  }
+  .medal-ico{
+    flex:none;width:38px;height:38px;display:flex;align-items:center;justify-content:center;
+    font-size:19px;border-radius:10px;background:rgba(255,255,255,.05);
+    filter:grayscale(1);opacity:.45;      /* 未解锁：灰度 + 压暗 */
+  }
+  .medal-row.on .medal-ico{
+    filter:none;opacity:1;background:rgba(255,210,120,.16);
+    box-shadow:0 0 16px rgba(255,210,120,.35);
+  }
+  .medal-name{font-size:13px;letter-spacing:.08em;color:rgba(215,240,236,.9);}
+  .medal-desc{margin-top:3px;font-size:10.5px;letter-spacing:.06em;color:rgba(170,210,205,.5);}
+  .medal-state{margin-left:auto;flex:none;font-size:10px;letter-spacing:.12em;color:rgba(160,210,205,.4);}
+  .medal-row.on .medal-state{color:#ffd88f;}
 
   /* ============ 结算补充 ============ */
   .btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:22px;}
@@ -679,7 +711,10 @@
         </button>
       </div>
 
-      <button id="openBoard" class="btn ghost" type="button">排 行 榜</button>
+      <div class="home-links">
+        <button id="openBoard" class="btn ghost" type="button">排 行 榜</button>
+        <button id="openMedals" class="btn ghost" type="button">成 就</button>
+      </div>
 
       <div class="rules">
         <div class="rule"><i class="c2"></i><span><b>SHIFT</b> 翻转重力，在上下两层跑道间切换</span></div>
@@ -708,6 +743,16 @@
       <div class="board" id="boardList"></div>
       <div class="board-note" id="boardNote"></div>
       <button class="btn ghost" id="boardBack" type="button">返回主页</button>
+    </div>
+  </div>
+
+  <!-- ===================== 成就 / 里程碑 ===================== -->
+  <div class="overlay hide" id="medalScreen">
+    <div class="panel">
+      <div class="over-title">成 就 里 程 碑</div>
+      <div class="over-reason">达成条件后永久解锁，进度保存在本机</div>
+      <div class="medal-list" id="medalList"></div>
+      <button class="btn ghost" id="medalBack" type="button">返回主页</button>
     </div>
   </div>
 
@@ -1146,6 +1191,59 @@
   }));
   ballSpec.scale.setScalar(0.44);
   scene.add(ballSpec);
+
+  /* --- 护盾视觉：护盾生效时，小球周围环绕一圈半透明小盾牌 --- */
+  /** 用 Canvas 画一张盾牌图标纹理（形状：上方平肩、下方收尖） */
+  function makeShieldTexture() {
+    const s = 128;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = s;
+    const g = cv.getContext('2d');
+    g.translate(s / 2, s / 2);
+    g.beginPath();
+    g.moveTo(0, -42);
+    g.lineTo(32, -28);
+    g.lineTo(32, 6);
+    g.quadraticCurveTo(32, 38, 0, 52);
+    g.quadraticCurveTo(-32, 38, -32, 6);
+    g.lineTo(-32, -28);
+    g.closePath();
+    g.fillStyle = 'rgba(126,200,255,.5)';      // 淡蓝填充，叠加混合后像能量护盾
+    g.fill();
+    g.lineWidth = 6;
+    g.strokeStyle = 'rgba(235,250,255,.95)';   // 白色描边，保证黑色背景上也看得清
+    g.stroke();
+    // 中间一条竖脊线，强化"盾"的辨识度
+    g.beginPath();
+    g.moveTo(0, -32);
+    g.lineTo(0, 42);
+    g.lineWidth = 4;
+    g.strokeStyle = 'rgba(235,250,255,.55)';
+    g.stroke();
+    const t = new THREE.CanvasTexture(cv);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }
+
+  const shieldTex = makeShieldTexture();
+  const shieldRing = new THREE.Group();   // 整个环一起旋转，做出"环绕公转"的感觉
+  const SHIELD_COUNT = 6;                 // 一圈 6 面盾牌
+  for (let i = 0; i < SHIELD_COUNT; i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: shieldTex,
+      color: 0x9fd8ff,
+      transparent: true,
+      opacity: 0.92,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }));
+    sp.scale.setScalar(0.72);
+    const a = (i / SHIELD_COUNT) * Math.PI * 2;   // 均匀分布在以球心为圆心的圆上
+    sp.position.set(Math.cos(a) * 1.62, Math.sin(a) * 1.62, 0);
+    shieldRing.add(sp);
+  }
+  shieldRing.visible = false;             // 默认隐藏，护盾生效时才显示
+  scene.add(shieldRing);
 
   /* --- 尾迹粒子：小球身后拖出一串渐隐的发光粒子 --- */
   const TRAIL_MAX = 34;
@@ -1811,6 +1909,10 @@
   const boardList = $('boardList');
   const boardNote = $('boardNote');
   const boardBack = $('boardBack');
+  // 成就页
+  const openMedals = $('openMedals');
+  const medalList = $('medalList');
+  const medalBack = $('medalBack');
   const overRank = $('overRank');
   const clearScreen = $('clearScreen');
   const clearStars = $('clearStars');
@@ -2040,7 +2142,7 @@
   }
 
   /* 页面切换：只显示一个覆盖层，传 null 表示全部隐藏（进入游戏） */
-  const SCREENS = ['nameScreen', 'startScreen', 'levelScreen', 'boardScreen', 'overScreen', 'clearScreen'];
+  const SCREENS = ['nameScreen', 'startScreen', 'levelScreen', 'boardScreen', 'medalScreen', 'overScreen', 'clearScreen'];
   function showScreen(id) {
     for (const s of SCREENS) {
       document.getElementById(s).classList.toggle('hide', s !== id);
@@ -2057,6 +2159,9 @@
     const cleared = Object.keys(p.stars || {}).length;
     campaignMeta.textContent = '已通关 ' + cleared + ' / ' + LEVELS.length;
     endlessMeta.textContent = '个人最佳 ' + playerBest() + ' M';
+    // 成就入口顺带显示解锁进度，方便一眼看到还剩几个
+    const got = Object.keys(loadProgressData().medals).length;
+    openMedals.textContent = '成 就 ' + got + '/' + MEDALS.length;
   }
 
   /* ---------- 账号：邮箱 + 密码（Supabase Auth） ---------- */
@@ -2263,6 +2368,24 @@
     playerName = '';
     localStorage.removeItem(NAME_KEY);
     openNameScreen();
+  }
+
+  /** 渲染成就页：逐条列出全部里程碑，区分已解锁 / 未解锁 */
+  function renderMedals() {
+    PROGRESS = loadProgressData();       // 每次打开都读最新存档，避免显示旧状态
+    medalList.innerHTML = '';
+    for (const m of MEDALS) {
+      const got = !!PROGRESS.medals[m.id];
+      const row = document.createElement('div');
+      row.className = 'medal-row' + (got ? ' on' : '');
+      // 未解锁用锁图标替代 emoji，并显示解锁条件
+      row.innerHTML =
+        '<div class="medal-ico">' + (got ? m.emoji : '🔒') + '</div>' +
+        '<div><div class="medal-name">' + m.name + '</div>' +
+        '<div class="medal-desc">' + m.desc + '</div></div>' +
+        '<div class="medal-state">' + (got ? '已解锁' : '未解锁') + '</div>';
+      medalList.appendChild(row);
+    }
   }
 
   /** 渲染关卡列表 */
@@ -2861,6 +2984,7 @@
     // 复活：颜色不符也可以用，但复活后颜色会被重置为安全状态（跟落点一致）
     if (state.lives > 0) {
       state.lives--;
+      refreshLivesUI();   // 复活次数已变化：立刻同步左上角爱心，避免显示旧数字
       // 回到「刚才那个安全位置」：让玩家不立刻再死
       state.ballVel = 0;
       state.squash = 0;
@@ -3063,6 +3187,16 @@
     ballGlow.position.set(0, state.ballY, 0);
     // 高光点随球移动，偏向镜头一侧（+X）并略偏上，模拟球面反光
     ballSpec.position.set(0.42 * sxz, state.ballY + anchor + 0.26 * sy, 0.36);
+
+    // 护盾光环：护盾生效时跟随小球，缓慢自转并轻微呼吸（缩放）
+    const shieldActive = playing && performance.now() < state.shieldUntil;
+    shieldRing.visible = shieldActive;
+    if (shieldActive) {
+      shieldRing.position.set(0, state.ballY, 0);
+      shieldRing.rotation.z += dt * 1.15;   // 每帧转一点，形成环绕公转
+      const pulse = 1 + Math.sin(performance.now() * 0.005) * 0.07;
+      shieldRing.scale.setScalar(pulse);
+    }
 
     // 尾迹：按时间间隔持续发射粒子
     if (playing) {
@@ -3298,6 +3432,15 @@
   openBoard.addEventListener('click', () => {
     renderBoard();
     showScreen('boardScreen');
+  });
+  // 成就页：每次打开重新渲染，保证解锁状态是最新的
+  openMedals.addEventListener('click', () => {
+    renderMedals();
+    showScreen('medalScreen');
+  });
+  medalBack.addEventListener('click', () => {
+    renderHome();
+    showScreen('startScreen');
   });
   levelBack.addEventListener('click', () => {
     renderHome();
