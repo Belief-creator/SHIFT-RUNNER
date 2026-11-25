@@ -23,6 +23,10 @@
   #game{position:fixed;inset:0;}
   canvas{display:block;}
 
+  /* 统一保证 hidden 属性生效：.lives/.buff/.hud-buffs 自定义了 display，
+     不强制隐藏就会盖掉浏览器默认的 [hidden]{display:none}，导致本该隐藏的元素仍然显示 */
+  [hidden]{display:none !important;}
+
   /* 暗角，让画面中心更聚焦 */
   .vignette{
     position:fixed;inset:0;pointer-events:none;z-index:2;
@@ -546,10 +550,11 @@
   }
   .lives i.heart{font-style:normal;color:#ff6a8a;font-size:13px;filter:drop-shadow(0 0 6px rgba(255,90,120,.9));}
 
-  /* 增益状态条：放在 HUD 顶部之下、combo 之上 */
+  /* 增益状态条：放在距离卡下方、参与 HUD 正常布局（不再 fixed，避免遮住左上角爱心） */
+  .hud-upper{display:flex;flex-direction:column;gap:8px;}
   .hud-buffs{
-    position:fixed;top:78px;left:50%;transform:translateX(-50%);
-    display:flex;gap:10px;z-index:6;pointer-events:none;
+    display:flex;justify-content:center;gap:10px;
+    z-index:6;pointer-events:none;
   }
   .buff{
     display:inline-flex;align-items:center;gap:6px;
@@ -607,6 +612,8 @@
 
   <!-- ===================== HUD ===================== -->
   <div id="hud">
+    <!-- 上部整体容器：距离卡 + 护盾/磁吸状态条（状态条改为文档流内，避免遮挡左侧爱心） -->
+    <div class="hud-upper">
     <div class="hud-top">
       <div class="stat">
         <div class="label">DISTANCE</div>
@@ -632,6 +639,7 @@
     <div class="hud-buffs" id="buffsBar" hidden>
       <div class="buff buff-shield" id="buffShield" hidden>🛡 护盾 <b id="shieldRemain">0</b>s</div>
       <div class="buff buff-magnet" id="buffMagnet" hidden>🧲 磁吸 <b id="magnetRemain">0</b>s</div>
+    </div>
     </div>
 
     <div class="hud-bottom">
