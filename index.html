@@ -937,7 +937,8 @@
     maxLives: 5,                     // 单局复活次数上限（初始 3 次，任务/道具最多叠加到 5）
     startLives: 3,                   // 每局初始复活次数
     reviveShieldMs: 3000,            // 复活后自带的护盾时长（毫秒）
-    reviveFxMs: 520,                 // 复活时粒子重新聚合成球的动画时长（毫秒）
+    reviveSlowMs: 900,               // 死亡后跑道减速滑行到停止的时长（毫秒）
+    reviveGatherMs: 900,             // 停下后粒子凝聚成小球的时长（毫秒）
     reviveAdvanceZ: 10,              // 复活时世界向前推进的距离（= 在死亡点前方 10 米复活）
 
     /* --- 任务 / 勋章 --- */
@@ -1411,7 +1412,7 @@
       d.sp.position.set(d.ox, state.ballY + d.oy, d.oz);
       d.sp.visible = true;
     }
-    reviveFxUntil = performance.now() + CFG.reviveFxMs;
+    reviveFxUntil = performance.now() + CFG.reviveGatherMs;
     ballSprite.material.opacity = 0;    // 动画期间先隐藏球体，收拢完成后重新出现
   }
 
@@ -1433,6 +1434,63 @@
       d.sp.position.set(d.ox * left, state.ballY + d.oy * left, d.oz * left);
       d.sp.material.opacity = 0.95 * left;   // 越靠球心越淡，避免糊成一团
       if (k >= 1) { d.active = false; d.sp.visible = false; }
+    }
+  }
+
+  /** 复活点对齐：缺口换层、小球颜色与所在跑道一致 */
+  function alignReviveToTrack() {
+    const seg = currentSegment();
+    if (seg) {
+      // 复活点若正好是断裂缺口，换到另一层，避免复活瞬间又掉下去
+      const holeHere = state.gravity < 0 ? seg.holeBottom : seg.holeTop;
+      if (holeHere) {
+        state.gravity *= -1;
+        state.targetY = state.gravity * BALL_REST_Y;
+        state.ballY = state.targetY;
+      }
+      // 颜色对齐当前跑道，复活后不会立刻因颜色不符再死
+      state.colorIdx = state.gravity < 0 ? seg.colorBottom : seg.colorTop;
+      applyColor(state.colorIdx);
+    }
+    state.curSeg = seg;   // 同步当前赛道段，避免跨段误判
+  }
+
+  /**
+   * 复活流程推进：
+   *   slow   —— 跑道减速滑行 10 米后停住（easeOut，最后平滑刹停）
+   *   gather —— 停下后粒子从四周缓慢凝聚成小球
+   *   完成后 —— 恢复小球显示，游戏正常继续（护盾从此刻开始计时）
+   */
+  function updateRevivePhase() {
+    const now = performance.now();
+
+    if (state.revivePhase === 'slow') {
+      // easeOutCubic：滑行先快后慢，结束时速度归零
+      const t = Math.min(1, Math.max(0, 1 - (state.reviveSlowAt - now) / CFG.reviveSlowMs));
+      const eased = 1 - Math.pow(1 - t, 3);
+      const target = CFG.reviveAdvanceZ * eased;
+      const step = target - state.reviveTravel;
+      if (step > 0) {
+        scrollWorld(step);
+        state.reviveTravel = target;
+      }
+      if (t >= 1) {
+        // 跑道已停稳：先对齐层级 / 颜色，再开始粒子凝聚
+        alignReviveToTrack();
+        state.revivePhase = 'gather';
+        spawnReviveBurst(state.colorIdx);
+        state.reviveGatherAt = performance.now() + CFG.reviveGatherMs;
+      }
+      return;
+    }
+
+    if (state.revivePhase === 'gather' && now >= state.reviveGatherAt) {
+      // 凝聚完成：小球恢复显示，护盾计时从此开始，游戏正常继续
+      state.revivePhase = '';
+      ballSprite.material.opacity = 0.82;
+      ballGlow.material.opacity = 0.42;
+      state.shieldUntil = performance.now() + CFG.reviveShieldMs;   // 复活自带 3 秒护盾
+      showMilestone('♥ 复活 + 护盾 3s');
     }
   }
 
@@ -1887,7 +1945,10 @@
     shieldUntil: 0,             // 护盾到期时间戳（ms）。护盾期间撞墙/缺口免疫，颜色不符依然会死
     magnetUntil: 0,             // 磁吸金球到期时间戳。生效时附近金色光点会被"吸"到小球上
     invulnUntil: 0,             // 极短无敌帧截止时间戳：护盾吸收/复活后，让卡在身上的障碍直接穿过去
-    worldFreezeUntil: 0,        // 世界冻结截止时间戳：复活动画期间赛道停止滚动
+    revivePhase: '',            // 复活流程阶段：'' 无 | 'slow' 跑道减速滑行 | 'gather' 粒子凝聚
+    reviveSlowAt: 0,            // 减速滑行结束时间戳
+    reviveGatherAt: 0,          // 粒子凝聚结束时间戳
+    reviveTravel: 0,            // 滑行阶段已经推进的距离（用于按帧差分滚动）
 
     /* --- 结算 / 手感 --- */
     prevBest: 0,            // 本局开始前的个人最高（用于判定「新纪录」与「超过上一局」）
@@ -2986,7 +3047,11 @@
     state.shieldUntil = 0;
     state.magnetUntil = 0;
     state.invulnUntil = 0;
-    state.worldFreezeUntil = 0;
+    // 复位复活流程（避免上一局的滑行/凝聚状态残留）
+    state.revivePhase = '';
+    state.reviveSlowAt = 0;
+    state.reviveGatherAt = 0;
+    state.reviveTravel = 0;
     // 清掉可能残留的复活动画，恢复小球正常透明度
     reviveFxUntil = 0;
     ballSprite.material.opacity = 0.82;
@@ -3171,28 +3236,21 @@
       return;
     }
 
-    // 复活：颜色不符也可以用；复活后小球由粒子重新聚合，颜色自动对齐当前跑道
+    // 复活：颜色不符也可以用。流程 = 跑道减速滑行到停止 → 粒子缓慢凝聚成球 → 正常继续
     if (state.lives > 0) {
       state.lives--;
       refreshLivesUI();   // 复活次数已变化：立刻同步左上角爱心，避免显示旧数字
 
-      // 复活点在死亡位置前方 10 米：直接把整个世界向前推进 10 米（小球在屏幕上的位置不变）
-      scrollWorld(CFG.reviveAdvanceZ);
+      // 阶段一：赛道在 reviveSlowMs 内滑行 CFG.reviveAdvanceZ 米后停住（不再瞬间跳 10 米）
+      state.revivePhase = 'slow';
+      state.reviveTravel = 0;
+      state.reviveSlowAt = now + CFG.reviveSlowMs;
+      // 阶段二：停下后开始粒子凝聚
+      state.reviveGatherAt = state.reviveSlowAt + CFG.reviveGatherMs;
 
-      const seg = currentSegment();
-      if (seg) {
-        // 失败位置若正好是断裂缺口，先换到另一层，避免复活瞬间又掉下去
-        const holeHere = state.gravity < 0 ? seg.holeBottom : seg.holeTop;
-        if (holeHere) {
-          state.gravity *= -1;
-          state.targetY = state.gravity * BALL_REST_Y;
-          state.ballY = state.targetY;
-        }
-        // 小球颜色与当前所在跑道一致，复活后不会立刻因颜色不符再死
-        state.colorIdx = state.gravity < 0 ? seg.colorBottom : seg.colorTop;
-        applyColor(state.colorIdx);
-      }
-      state.curSeg = seg;   // 同步当前赛道段，避免跨段误判
+      // 球体先隐藏，等粒子凝聚完成再出现
+      ballSprite.material.opacity = 0;
+      ballGlow.material.opacity = 0;
 
       // 速度从初始状态重新开始：清空加速计时，速度由 baseSpeed 重新缓慢爬升
       state.time = 0;
@@ -3204,15 +3262,15 @@
       state.squashVel = 0;
       state.shake = 0.6;
       state.mode = 'playing';
-      state.inputLockUntil = now + 800;               // 复活后短暂免误触
-      state.shieldUntil = now + CFG.reviveShieldMs;   // 复活自带 3 秒护盾
-      state.invulnUntil = now + CFG.reviveFxMs + 200; // 聚合动画期间不判定死亡
-      state.worldFreezeUntil = now + CFG.reviveFxMs;  // 复活过程中赛道静止，动画结束才继续跑
-      spawnReviveBurst(state.colorIdx);               // 粒子聚合成球
+      // 整个复活演出期间禁止输入与死亡判定
+      state.inputLockUntil = state.reviveGatherAt + 200;
+      state.invulnUntil = state.reviveGatherAt + 250;
+      // 护盾不在这里开，等演出结束（小球出现那一刻）再开始计时 3 秒
+
       sfxRevive();
       flashEl.classList.add('soft');
       setTimeout(() => flashEl.classList.remove('soft'), 260);
-      showMilestone('♥ 复活 + 护盾 3s');
+      showMilestone('♥ 复活中…');
       return;
     }
 
@@ -3311,6 +3369,9 @@
   function update(dt) {
     const playing = state.mode === 'playing';
 
+    // 复活演出（跑道滑行 → 粒子凝聚）优先推进，演出期间世界不再正常滚动
+    updateRevivePhase();
+
     /* --- 1. 速度与距离 --- */
     if (playing) {
       state.time += dt;
@@ -3323,8 +3384,8 @@
     // 加速带生效期间临时提速
     const spd = state.speed * (state.boostTime > 0 ? 1.38 : 1);
 
-    // 复活动画期间世界冻结：赛道停止滚动、分数与里程也不推进
-    const frozen = performance.now() < state.worldFreezeUntil;
+    // 复活演出期间：赛道不再正常滚动、分数与里程也不推进
+    const frozen = state.revivePhase !== '';
 
     if (playing && !frozen) {
       // distance 是物理里程，只用于生成节奏与阶段解锁，不受倍率影响
@@ -3397,7 +3458,7 @@
     ballSpec.position.set(0.42 * sxz, state.ballY + anchor + 0.26 * sy, 0.36);
 
     // 护盾光环：护盾生效时跟随小球，3 面小盾牌绕水平轴公转并轻微呼吸（缩放）
-    const shieldActive = playing && performance.now() < state.shieldUntil;
+    const shieldActive = playing && !state.revivePhase && performance.now() < state.shieldUntil;
     shieldRing.visible = shieldActive;
     if (shieldActive) {
       shieldRing.position.set(0, state.ballY, 0);
@@ -3407,7 +3468,7 @@
     }
 
     // 尾迹：按时间间隔持续发射粒子（复活动画期间不发射，保持"粒子重组"的纯粹感）
-    if (playing && !reviveFxUntil) {
+    if (playing && !reviveFxUntil && !state.revivePhase) {
       trailTimer -= dt;
       if (trailTimer <= 0) {
         trailTimer = 0.014;
@@ -3417,8 +3478,8 @@
     updateTrail(dt);
     updateReviveBurst(dt);   // 复活粒子：向球心聚拢，结束后复原小球
 
-    // 光晕呼吸（复活动画期间隐藏光晕，避免提前暴露小球位置）
-    if (reviveFxUntil) ballGlow.material.opacity = 0;
+    // 光晕呼吸（复活演出期间隐藏光晕，避免提前暴露小球位置）
+    if (state.revivePhase || reviveFxUntil) ballGlow.material.opacity = 0;
     else ballGlow.material.opacity = 0.46 + Math.sin(performance.now() * 0.004) * 0.08;
 
     /* --- 4. 判定（无任何宽容缓冲：颜色不符立即结束） --- */
