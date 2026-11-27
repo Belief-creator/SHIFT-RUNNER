@@ -931,6 +931,8 @@
     /* --- 道具系统 --- */
     pickupChance: 0.18,              // 每段赛道生成道具的概率（0~1）
     pickupTypes: ['shield', 'life', 'magnet'], // 三种道具；生成时随机选
+    shieldBeforeObstacleChance: 0.5, // 本段有障碍时，在它前面一段补一个护盾道具的概率
+    forceGapZ: 18,                   // 两次“必须换层”（障碍墙/断裂）之间的最小间隔（米）
     shieldDurMs: 6000,               // 护盾生效时长（毫秒）
     magnetDurMs: 8000,               // 磁吸金球生效时长（毫秒）
     pickupLifeBonus: 1,              // 捡到"复活球"给的复活次数
@@ -1311,6 +1313,59 @@
   }
   shieldRing.visible = false;             // 默认隐藏，护盾生效时才显示
   scene.add(shieldRing);
+
+  /* --- 磁吸视觉：磁吸生效时，小球周围环绕 3 个马蹄形磁铁（与护盾同样的环绕方式） --- */
+  /** 用 Canvas 画一张马蹄形磁铁图标纹理（U 形，两个极头用白色区分） */
+  function makeMagnetTexture() {
+    const s = 128;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = s;
+    const g = cv.getContext('2d');
+    g.translate(s / 2, s / 2);
+    g.lineCap = 'round';
+    // U 形本体：上半圆 + 两条向下伸出的腿
+    g.lineWidth = 20;
+    g.strokeStyle = 'rgba(255,214,130,.95)';
+    g.beginPath();
+    g.arc(0, -6, 26, Math.PI, 0, false);   // 上半圆，开口朝下
+    g.stroke();
+    g.beginPath();
+    g.moveTo(-26, -6); g.lineTo(-26, 30);  // 左腿
+    g.moveTo(26, -6);  g.lineTo(26, 30);   // 右腿
+    g.stroke();
+    // 两个极头（白色端帽），让磁铁一眼可辨
+    g.lineWidth = 20;
+    g.strokeStyle = 'rgba(255,255,255,.95)';
+    g.beginPath();
+    g.moveTo(-26, 20); g.lineTo(-26, 30);
+    g.moveTo(26, 20);  g.lineTo(26, 30);
+    g.stroke();
+    const t = new THREE.CanvasTexture(cv);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }
+
+  const magnetTex = makeMagnetTexture();
+  const magnetRing = new THREE.Group();
+  const MAGNET_COUNT = 3;
+  for (let i = 0; i < MAGNET_COUNT; i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: magnetTex,
+      color: 0xffd27a,
+      transparent: true,
+      opacity: 1,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }));
+    sp.scale.setScalar(0.85);
+    const a = (i / MAGNET_COUNT) * Math.PI * 2;
+    // 半径比护盾环略大、初始角度错开 60°，两个加成同时生效时不会叠在一起
+    sp.position.set(Math.cos(a) * 2.45, 0, Math.sin(a) * 2.45);
+    magnetRing.add(sp);
+  }
+  magnetRing.rotation.y = Math.PI / 3;
+  magnetRing.visible = false;
+  scene.add(magnetRing);
 
   /* --- 尾迹粒子：小球身后拖出一串渐隐的发光粒子 --- */
   const TRAIL_MAX = 34;
@@ -1807,23 +1862,30 @@
       else if (prev.padLane >= 0 && prev.padType === 'jump') forcedLane = 1 - prev.padLane;
     }
 
+    // 强制换层元素（障碍墙 / 断裂口）之间至少间隔 forceGapZ 米：
+    // 否则连续几段都要切线，高速下会出现「来不及反应」的必死连击
+    const center = (far + near) / 2;
+    const forceGapOk = (state.lastForceZ - center) >= CFG.forceGapZ;
+
     // 障碍墙：封锁一层，但不得封玩家被上一段逼到的层
-    if (armed && Math.random() < 0.42) {
+    if (armed && forceGapOk && Math.random() < 0.42) {
       let lane = Math.random() < 0.5 ? 0 : 1;
       if (lane === forcedLane) lane = 1 - lane;
       if (lane === 0) s.barrierBottom = true;
       else s.barrierTop = true;
+      state.lastForceZ = center;
     }
 
     // 断裂缺口：第二阶段解锁，整层跑道消失
     // ⚠️ 互斥 1：本段不得与障碍墙同时出现（单段最多封一层，避免两层全封）。
     // ⚠️ 互斥 2：断裂口不得落在 forcedLane，否则形成「上一段逼你切层 → 本段那层又断」
     //          的无反应空间连击（玩家视角即“上面断裂、下面也没有跑道”）。
-    if (armed && stage >= 2 && !s.barrierBottom && !s.barrierTop && Math.random() < 0.2) {
+    if (armed && forceGapOk && stage >= 2 && !s.barrierBottom && !s.barrierTop && Math.random() < 0.2) {
       let lane = Math.random() < 0.5 ? 0 : 1;
       if (lane === forcedLane) lane = 1 - lane;   // 换到另一层，避开被迫层
       if (lane === 0) s.holeBottom = true;
       else s.holeTop = true;
+      state.lastForceZ = center;
     }
 
     const blockedBottom = s.barrierBottom || s.holeBottom;   // 该层本段不可通行
@@ -1861,6 +1923,25 @@
       else if (lane === 1 && blockedTop) lane = 0;
       const type = CFG.pickupTypes[Math.floor(Math.random() * CFG.pickupTypes.length)];
       s.pickup = { type, lane, z: (Math.random() * 0.5 - 0.2) * len, taken: false };
+    }
+
+    // 护盾道具尽量出现在障碍物"前面"：本段有障碍/断裂时，有概率在更靠近玩家的上一段补一个护盾，
+    // 让玩家来得及先拿到护盾再面对危险（只补一部分，保持随机性）
+    if (armed && (s.barrierBottom || s.barrierTop || s.holeBottom || s.holeTop)
+        && Math.random() < CFG.shieldBeforeObstacleChance) {
+      const prevSeg = segments[segments.length - 1];
+      if (prevSeg && !prevSeg.pickup) {
+        // 上一段若本身封了一层，就把护盾放在仍可通行的另一层
+        const pbBlocked = prevSeg.barrierBottom || prevSeg.holeBottom;
+        const ptBlocked = prevSeg.barrierTop || prevSeg.holeTop;
+        if (!(pbBlocked && ptBlocked)) {
+          let lane = Math.random() < 0.5 ? 0 : 1;
+          if (lane === 0 && pbBlocked) lane = 1;
+          else if (lane === 1 && ptBlocked) lane = 0;
+          prevSeg.pickup = { type: 'shield', lane, z: (Math.random() * 0.4 - 0.1) * prevSeg.len, taken: false };
+          layoutSegment(prevSeg);   // 重新布局，让这个补出来的护盾立刻显示
+        }
+      }
     }
 
     layoutSegment(s);
@@ -1942,8 +2023,8 @@
 
     /* --- 复活 / 道具增益 --- */
     lives: 0,                   // 本局剩余复活次数（任务 / 道具增加，上限 CFG.maxLives）
-    shieldUntil: 0,             // 护盾到期时间戳（ms）。护盾期间撞墙/缺口免疫，颜色不符依然会死
-    magnetUntil: 0,             // 磁吸金球到期时间戳。生效时附近金色光点会被"吸"到小球上
+    shieldUntil: 0,             // 护盾到期时间戳（ms）。护盾期间撞墙/缺口/颜色不符都会被抵消
+    magnetUntil: 0,             // 磁吸金球到期时间戳。生效时上下两层的金色光点都会被吸向小球
     invulnUntil: 0,             // 极短无敌帧截止时间戳：护盾吸收/复活后，让卡在身上的障碍直接穿过去
     revivePhase: '',            // 复活流程阶段：'' 无 | 'slow' 跑道减速滑行 | 'gather' 粒子凝聚
     reviveSlowAt: 0,            // 减速滑行结束时间戳
@@ -1965,6 +2046,7 @@
     /* --- 颜色判定相关 --- */
     curSeg: null,           // 当前所处赛道段（用于检测“越线”）
     mismatchTime: 0,        // 颜色不符持续时长（用于警示）
+    lastForceZ: 999,        // 上一次生成「必须换层」元素（障碍墙/断裂）的 z 中心，用于保证最小间距
   };
 
   /* ==========================================================
@@ -3058,6 +3140,7 @@
     ballGlow.material.opacity = 0.42;
     for (const d of reviveDots) { d.active = false; d.sp.visible = false; }
     state.milestonesHit.clear();   // 里程碑每局重新计
+    state.lastForceZ = 999;        // 障碍间距计时重置
     state.beatPrev = false;
     state.overReadyAt = 0;
     warnEl.classList.remove('on');
@@ -3222,17 +3305,27 @@
     const now = performance.now();
     // 极短无敌帧：护盾吸收/复活后的几百毫秒内，卡在身上的障碍直接穿过去，避免连掉多条命
     if (now < state.invulnUntil) return;
-    // 护盾：只对「撞上障碍 / 跌落」这种物理伤害免疫，颜色不符必须死
-    const isPhysical = reason === '撞上障碍' || reason === '跌落';
-    if (isPhysical && now < state.shieldUntil) {
-      // 护盾吸收：给一个小震 + 音效，继续玩
+    // 护盾：撞墙 / 跌落 / 颜色不符 都能抵消；颜色不符时还会自动把小球颜色切到与跑道一致
+    if (now < state.shieldUntil) {
       state.shieldUntil = 0;                    // 用完就没了
       state.invulnUntil = now + 900;            // 让当前障碍在这段时间内穿过去
       state.shake = 0.6;
       sfxShield();
       flashEl.classList.add('soft');
       setTimeout(() => flashEl.classList.remove('soft'), 220);
-      showMilestone('🛡 护盾吸收！');
+      if (reason === '颜色不符') {
+        // 自动同步颜色到当前跑道，并清掉警示，避免下一帧又被判定为颜色不符
+        const seg = currentSegment();
+        if (seg) {
+          state.colorIdx = state.gravity < 0 ? seg.colorBottom : seg.colorTop;
+          applyColor(state.colorIdx);
+        }
+        state.mismatchTime = 0;
+        warnEl.classList.remove('on');
+        showMilestone('🛡 护盾抵消 · 颜色已同步');
+      } else {
+        showMilestone('🛡 护盾吸收！');
+      }
       return;
     }
 
@@ -3467,6 +3560,16 @@
       shieldRing.scale.setScalar(pulse);
     }
 
+    // 磁吸环：磁吸生效时跟随小球，3 个马蹄形磁铁反方向水平公转
+    const magnetActive = playing && !state.revivePhase && performance.now() < state.magnetUntil;
+    magnetRing.visible = magnetActive;
+    if (magnetActive) {
+      magnetRing.position.set(0, state.ballY, 0);
+      magnetRing.rotation.y -= dt * 1.2;
+      const mpulse = 1 + Math.sin(performance.now() * 0.005 + 1.4) * 0.07;
+      magnetRing.scale.setScalar(mpulse);
+    }
+
     // 尾迹：按时间间隔持续发射粒子（复活动画期间不发射，保持"粒子重组"的纯粹感）
     if (playing && !reviveFxUntil && !state.revivePhase) {
       trailTimer -= dt;
@@ -3588,20 +3691,23 @@
           s.pickupRing.rotation.z += dt * 2.2;
         }
 
-        // 磁吸金球：磁吸生效时，附近未吃的金球在各自层被"吸向"小球（orb 的 z 往 0 拉）
+        // 磁吸金球：生效期间，上下两层的光点都会被拉向小球（z 靠近 0，y 靠向小球高度）
         if (performance.now() < state.magnetUntil) {
           for (let k = 0; k < 2; k++) {
             if (s.orbLane[k] < 0 || s.orbTaken[k]) continue;
             const wz = gz + s.orbZ[k];
-            if (Math.abs(wz) < 4.0) {
-              // 往 wz=0 方向拉，越近越猛
-              s.orbZ[k] -= wz * Math.min(1, dt * 5.5);
-              s.orbNodes[k].position.z = gz + s.orbZ[k];
-              // 吸到范围内就直接吃
-              const oy = s.orbLane[k] === 0 ? -BALL_REST_Y : BALL_REST_Y;
-              if (Math.abs(s.orbZ[k]) < 0.9 && Math.abs(state.ballY - oy) < 1.4) {
+            if (Math.abs(wz) < 9.0) {
+              // z 方向往小球拉：距离越近吸力越强
+              s.orbZ[k] -= wz * Math.min(1, dt * 4.5);
+              const node = s.orbNodes[k];
+              node.position.z = gz + s.orbZ[k];
+              // y 方向也往小球所在高度拉，所以上下两层的光点都会飞向小球
+              node.position.y += (state.ballY - node.position.y) * Math.min(1, dt * 6);
+              // 三维距离足够近就吃掉（不再要求和小球同一层）
+              const dy = node.position.y - state.ballY;
+              if (Math.hypot(s.orbZ[k], dy) < 1.1) {
                 s.orbTaken[k] = true;
-                s.orbNodes[k].visible = false;
+                node.visible = false;
                 pickOrb();
               }
             }
