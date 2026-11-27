@@ -881,7 +881,10 @@
     shieldDurMs: 6000,               // 护盾生效时长（毫秒）
     magnetDurMs: 8000,               // 磁吸金球生效时长（毫秒）
     pickupLifeBonus: 1,              // 捡到"复活球"给的复活次数
-    maxLives: 3,                     // 单局复活次数上限（防无限续命）
+    maxLives: 5,                     // 单局复活次数上限（初始 3 次，任务/道具最多叠加到 5）
+    startLives: 3,                   // 每局初始复活次数
+    reviveShieldMs: 3000,            // 复活后自带的护盾时长（毫秒）
+    reviveFxMs: 520,                 // 复活时粒子重新聚合成球的动画时长（毫秒）
 
     /* --- 任务 / 勋章 --- */
     taskProgressSaveKey: 'sr_tasks', // 任务 / 勋章存档键（localStorage）
@@ -1234,20 +1237,21 @@
   }
 
   const shieldTex = makeShieldTexture();
-  const shieldRing = new THREE.Group();   // 整个环一起旋转，做出"环绕公转"的感觉
-  const SHIELD_COUNT = 6;                 // 一圈 6 面盾牌
+  const shieldRing = new THREE.Group();   // 整个环绕 Y 轴旋转，让小盾牌水平环绕小球
+  const SHIELD_COUNT = 3;                 // 一圈 3 面小盾牌
   for (let i = 0; i < SHIELD_COUNT; i++) {
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({
       map: shieldTex,
-      color: 0x9fd8ff,
+      color: 0xbfe6ff,
       transparent: true,
-      opacity: 0.92,
+      opacity: 1,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     }));
-    sp.scale.setScalar(0.72);
-    const a = (i / SHIELD_COUNT) * Math.PI * 2;   // 均匀分布在以球心为圆心的圆上
-    sp.position.set(Math.cos(a) * 1.62, Math.sin(a) * 1.62, 0);
+    sp.scale.setScalar(0.8);
+    const a = (i / SHIELD_COUNT) * Math.PI * 2;   // 三等分
+    // 放在 XZ 水平面上：绕小球做水平公转（半径略大于球体+光晕，避免被光晕吃掉）
+    sp.position.set(Math.cos(a) * 1.85, 0, Math.sin(a) * 1.85);
     shieldRing.add(sp);
   }
   shieldRing.visible = false;             // 默认隐藏，护盾生效时才显示
@@ -1313,6 +1317,68 @@
       p.sp.position.z += p.vz * dt;
       p.sp.material.opacity = t * 0.68;
       p.sp.scale.setScalar(p.size * (0.3 + t * 0.7) * 2);
+    }
+  }
+
+  /* --- 复活粒子：复活瞬间由四周粒子聚拢、重新拼出小球 --- */
+  const REVIVE_DOTS = 30;      // 粒子数量
+  const reviveDots = [];       // { sp, ox, oy, oz, t, dur, active }
+  let reviveFxUntil = 0;       // 复活动画结束时间戳（0 表示没有动画在进行）
+
+  for (let i = 0; i < REVIVE_DOTS; i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: glowTex,
+      color: COLORS[0],
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }));
+    sp.visible = false;
+    scene.add(sp);
+    reviveDots.push({ sp, ox: 0, oy: 0, oz: 0, t: 0, dur: 0.4, active: false });
+  }
+
+  /** 在失败位置播放"粒子聚合成球"：粒子从四周向球心收拢，球体在动画结束后显现 */
+  function spawnReviveBurst(colorIdx) {
+    for (let i = 0; i < reviveDots.length; i++) {
+      const d = reviveDots[i];
+      const a = (i / reviveDots.length) * Math.PI * 2 + Math.random() * 0.5;
+      const r = 1.0 + Math.random() * 1.4;      // 起始散布半径（大小随机，避免太规整）
+      d.ox = Math.cos(a) * r;
+      d.oy = Math.sin(a) * r * 0.85;
+      d.oz = (Math.random() - 0.5) * 1.6;
+      d.t = 0;
+      d.dur = 0.30 + Math.random() * 0.18;      // 每颗粒子收拢用时略有差异
+      d.active = true;
+      d.sp.material.color.setHex(COLORS[colorIdx]);   // 粒子颜色 = 当前跑道颜色
+      d.sp.material.opacity = 0.95;
+      d.sp.scale.setScalar(0.38 + Math.random() * 0.26);
+      d.sp.position.set(d.ox, state.ballY + d.oy, d.oz);
+      d.sp.visible = true;
+    }
+    reviveFxUntil = performance.now() + CFG.reviveFxMs;
+    ballSprite.material.opacity = 0;    // 动画期间先隐藏球体，收拢完成后重新出现
+  }
+
+  /** 每帧推进复活粒子；全部收拢后恢复小球与光晕的正常显示 */
+  function updateReviveBurst(dt) {
+    if (!reviveFxUntil) return;
+    if (performance.now() >= reviveFxUntil) {
+      reviveFxUntil = 0;
+      ballSprite.material.opacity = 0.82;   // 恢复球体默认透明度
+      for (const d of reviveDots) { d.active = false; d.sp.visible = false; }
+      return;
+    }
+    for (const d of reviveDots) {
+      if (!d.active) continue;
+      d.t += dt;
+      const k = Math.min(1, d.t / d.dur);
+      const e = 1 - (1 - k) * (1 - k);   // easeOut：越接近球心速度越快
+      const left = 1 - e;
+      d.sp.position.set(d.ox * left, state.ballY + d.oy * left, d.oz * left);
+      d.sp.material.opacity = 0.95 * left;   // 越靠球心越淡，避免糊成一团
+      if (k >= 1) { d.active = false; d.sp.visible = false; }
     }
   }
 
@@ -1752,6 +1818,7 @@
     lives: 0,                   // 本局剩余复活次数（任务 / 道具增加，上限 CFG.maxLives）
     shieldUntil: 0,             // 护盾到期时间戳（ms）。护盾期间撞墙/缺口免疫，颜色不符依然会死
     magnetUntil: 0,             // 磁吸金球到期时间戳。生效时附近金色光点会被"吸"到小球上
+    invulnUntil: 0,             // 极短无敌帧截止时间戳：护盾吸收/复活后，让卡在身上的障碍直接穿过去
 
     /* --- 结算 / 手感 --- */
     prevBest: 0,            // 本局开始前的个人最高（用于判定「新纪录」与「超过上一局」）
@@ -2642,13 +2709,18 @@
 
   /** 从 localStorage 读勋章 / 任务进度；没有就返回空对象 */
   function loadProgressData() {
+    // 默认值：初始复活 3 次（与 CFG.startLives 保持一致）
+    const base = { medals: {}, newRecordCount: 0, livesMax: CFG.startLives, shieldStart: 0, tasks: {} };
+    let data;
     try {
       const raw = localStorage.getItem(CFG.taskProgressSaveKey);
-      if (!raw) return { medals: {}, newRecordCount: 0, livesMax: 1, shieldStart: 0, tasks: {} };
-      return { medals: {}, newRecordCount: 0, livesMax: 1, shieldStart: 0, tasks: {}, ...JSON.parse(raw) };
+      data = raw ? { ...base, ...JSON.parse(raw) } : { ...base };
     } catch (e) {
-      return { medals: {}, newRecordCount: 0, livesMax: 1, shieldStart: 0, tasks: {} };
+      data = { ...base };
     }
+    // 老存档里 livesMax 可能是 1/2：统一拉到新的初始 3 次，同时不超过上限 5
+    data.livesMax = Math.max(CFG.startLives, Math.min(CFG.maxLives, data.livesMax || CFG.startLives));
+    return data;
   }
   function saveProgressData(d) {
     try { localStorage.setItem(CFG.taskProgressSaveKey, JSON.stringify(d)); } catch (e) {}
@@ -2702,8 +2774,8 @@
   function applyProgressToStart() {
     PROGRESS = loadProgressData();
     sessionPickupCount = 0;
-    // livesMax 是历史任务奖励，resetGame 里先给默认 1，startGame 之后再拉到任务上限
-    CFG.maxLives = Math.max(CFG.maxLives, PROGRESS.livesMax);
+    // livesMax 是历史任务奖励（初始 3，任务可加到 5）；上限固定为 CFG.maxLives = 5
+    CFG.maxLives = Math.min(5, Math.max(CFG.maxLives, PROGRESS.livesMax));
     // 护盾开局即有：shieldStart > 0 时 startGame 里给一个短护盾
     return PROGRESS.shieldStart;
   }
@@ -2811,10 +2883,16 @@
     state.combo = 0;
     state.comboMax = 0;
     state.boostTime = 0;
-    // 复活次数每局重置为 1（任务解锁更多上限；道具在局中可额外叠加）
-    state.lives = 1;
+    // 复活次数：每局初始 3 次（任务奖励可提升上限，最多 CFG.maxLives = 5）
+    state.lives = CFG.startLives;
     state.shieldUntil = 0;
     state.magnetUntil = 0;
+    state.invulnUntil = 0;
+    // 清掉可能残留的复活动画，恢复小球正常透明度
+    reviveFxUntil = 0;
+    ballSprite.material.opacity = 0.82;
+    ballGlow.material.opacity = 0.42;
+    for (const d of reviveDots) { d.active = false; d.sp.visible = false; }
     state.milestonesHit.clear();   // 里程碑每局重新计
     state.beatPrev = false;
     state.overReadyAt = 0;
@@ -2888,8 +2966,8 @@
       state.shieldUntil = performance.now() + startShieldMs;
       showMilestone('🛡 任务奖励：开局护盾');
     }
-    // lives 上限：resetGame 给了 1，这里按任务奖励的 livesMax 拉上去（上限 CFG.maxLives）
-    state.lives = Math.max(state.lives, Math.min(CFG.maxLives, PROGRESS.livesMax || 1));
+    // lives 上限：resetGame 给了 3 次，任务奖励可继续提升，但不超过 CFG.maxLives（5）
+    state.lives = Math.max(state.lives, Math.min(CFG.maxLives, PROGRESS.livesMax || CFG.startLives));
     refreshLivesUI();
 
     state.mode = 'playing';
@@ -2976,11 +3054,14 @@
     if (state.mode !== 'playing') return;
 
     const now = performance.now();
+    // 极短无敌帧：护盾吸收/复活后的几百毫秒内，卡在身上的障碍直接穿过去，避免连掉多条命
+    if (now < state.invulnUntil) return;
     // 护盾：只对「撞上障碍 / 跌落」这种物理伤害免疫，颜色不符必须死
     const isPhysical = reason === '撞上障碍' || reason === '跌落';
     if (isPhysical && now < state.shieldUntil) {
       // 护盾吸收：给一个小震 + 音效，继续玩
-      state.shieldUntil = 0;   // 用完就没了
+      state.shieldUntil = 0;                    // 用完就没了
+      state.invulnUntil = now + 900;            // 让当前障碍在这段时间内穿过去
       state.shake = 0.6;
       sfxShield();
       flashEl.classList.add('soft');
@@ -2989,21 +3070,43 @@
       return;
     }
 
-    // 复活：颜色不符也可以用，但复活后颜色会被重置为安全状态（跟落点一致）
+    // 复活：颜色不符也可以用；复活后小球由粒子重新聚合，颜色自动对齐当前跑道
     if (state.lives > 0) {
       state.lives--;
       refreshLivesUI();   // 复活次数已变化：立刻同步左上角爱心，避免显示旧数字
-      // 回到「刚才那个安全位置」：让玩家不立刻再死
+
+      const seg = currentSegment();
+      if (seg) {
+        // 失败位置若正好是断裂缺口，先换到另一层，避免复活瞬间又掉下去
+        const holeHere = state.gravity < 0 ? seg.holeBottom : seg.holeTop;
+        if (holeHere) {
+          state.gravity *= -1;
+          state.targetY = state.gravity * BALL_REST_Y;
+          state.ballY = state.targetY;
+        }
+        // 小球颜色与当前所在跑道一致，复活后不会立刻因颜色不符再死
+        state.colorIdx = state.gravity < 0 ? seg.colorBottom : seg.colorTop;
+        applyColor(state.colorIdx);
+      }
+
+      // 速度从初始状态重新开始：清空加速计时，速度由 baseSpeed 重新缓慢爬升
+      state.time = 0;
+      state.speed = CFG.baseSpeed;
+      state.boostTime = 0;
+
       state.ballVel = 0;
       state.squash = 0;
       state.squashVel = 0;
       state.shake = 0.6;
       state.mode = 'playing';
-      state.inputLockUntil = now + 800;   // 复活后短暂免误触
+      state.inputLockUntil = now + 800;               // 复活后短暂免误触
+      state.shieldUntil = now + CFG.reviveShieldMs;   // 复活自带 3 秒护盾
+      state.invulnUntil = now + CFG.reviveFxMs + 200; // 聚合动画期间不判定死亡
+      spawnReviveBurst(state.colorIdx);               // 粒子聚合成球
       sfxRevive();
       flashEl.classList.add('soft');
       setTimeout(() => flashEl.classList.remove('soft'), 260);
-      showMilestone('♥ 复活！');
+      showMilestone('♥ 复活 + 护盾 3s');
       return;
     }
 
@@ -3196,18 +3299,18 @@
     // 高光点随球移动，偏向镜头一侧（+X）并略偏上，模拟球面反光
     ballSpec.position.set(0.42 * sxz, state.ballY + anchor + 0.26 * sy, 0.36);
 
-    // 护盾光环：护盾生效时跟随小球，缓慢自转并轻微呼吸（缩放）
+    // 护盾光环：护盾生效时跟随小球，3 面小盾牌绕水平轴公转并轻微呼吸（缩放）
     const shieldActive = playing && performance.now() < state.shieldUntil;
     shieldRing.visible = shieldActive;
     if (shieldActive) {
       shieldRing.position.set(0, state.ballY, 0);
-      shieldRing.rotation.z += dt * 1.15;   // 每帧转一点，形成环绕公转
+      shieldRing.rotation.y += dt * 1.2;   // 绕 Y 轴旋转 = 水平方向环绕小球
       const pulse = 1 + Math.sin(performance.now() * 0.005) * 0.07;
       shieldRing.scale.setScalar(pulse);
     }
 
-    // 尾迹：按时间间隔持续发射粒子
-    if (playing) {
+    // 尾迹：按时间间隔持续发射粒子（复活动画期间不发射，保持"粒子重组"的纯粹感）
+    if (playing && !reviveFxUntil) {
       trailTimer -= dt;
       if (trailTimer <= 0) {
         trailTimer = 0.014;
@@ -3215,9 +3318,11 @@
       }
     }
     updateTrail(dt);
+    updateReviveBurst(dt);   // 复活粒子：向球心聚拢，结束后复原小球
 
-    // 光晕呼吸
-    ballGlow.material.opacity = 0.46 + Math.sin(performance.now() * 0.004) * 0.08;
+    // 光晕呼吸（复活动画期间隐藏光晕，避免提前暴露小球位置）
+    if (reviveFxUntil) ballGlow.material.opacity = 0;
+    else ballGlow.material.opacity = 0.46 + Math.sin(performance.now() * 0.004) * 0.08;
 
     /* --- 4. 判定（无任何宽容缓冲：颜色不符立即结束） --- */
     if (playing) {
