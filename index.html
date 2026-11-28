@@ -920,6 +920,12 @@
     box-shadow:0 0 22px rgba(255,210,122,.38),inset 0 1px 0 rgba(255,255,255,.15);
   }
   .buff b{color:#fff;margin-left:2px;}
+  /* 马蹄磁铁小图标：内联 SVG 使用，开口朝上、比例随字号缩放，任何场景都不旋转 */
+  .ico-magnet{
+    width:1.15em;height:1.15em;flex:none;display:inline-block;
+    vertical-align:-0.18em;
+    filter:drop-shadow(0 0 5px rgba(255,198,110,.55));
+  }
 
   /* 拾取道具提示：屏幕正中偏下，约 1.2 秒淡出 */
   #pickupToast{
@@ -981,7 +987,8 @@
     <!-- 道具增益状态条：护盾 / 磁吸 / 减速生效时各占一条，倒计时内自动消失 -->
     <div class="hud-buffs" id="buffsBar" hidden>
       <div class="buff buff-shield" id="buffShield" hidden>🛡 护盾 <b id="shieldRemain">0</b>s</div>
-      <div class="buff buff-magnet" id="buffMagnet" hidden>🧲 磁吸 <b id="magnetRemain">0</b>s</div>
+      <!-- 磁吸状态：使用内联 SVG 马蹄磁铁（开口朝上、左青右金双极），不使用 emoji，避免各平台方向不一致 -->
+      <div class="buff buff-magnet" id="buffMagnet" hidden><svg class="ico-magnet" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 3.2v7.4a5.8 5.8 0 0 0 11.6 0V3.2" fill="none" stroke="currentColor" stroke-width="4.2"/><path d="M6.2 3.2v3.4" stroke="#20dccb" stroke-width="4.2"/><path d="M17.8 3.2v3.4" stroke="#ffb94f" stroke-width="4.2"/></svg> 磁吸 <b id="magnetRemain">0</b>s</div>
       <div class="buff buff-slow" id="buffSlow" hidden>⏱ 减速 <b id="slowRemain">0</b>s</div>
     </div>
     </div>
@@ -1323,9 +1330,9 @@
     halfW: 3.6,        // 隧道半宽（跑道宽度 = 7.2）
     halfH: 3.0,        // 隧道半高（上下两层跑道相距 6）
     ballR: 0.9,        // 小球半径
-    baseSpeed: 12,     // 初始前进速度（单位/秒）——下调后开局更从容
-    maxSpeed: 30,      // 最高速度（原来 40，接近上限时太快难以反应）
-    accel: 0.62,       // 每秒加速量（原来 0.95，加速更平缓）
+    baseSpeed: 15,     // 初始前进速度（较 2.0 提升 25%）
+    maxSpeed: 37,      // 最高速度（提升后仍保留反应空间）
+    accel: 0.81,       // 每秒加速量（较 2.0 提升约 30%）
     barrierH: 1.85,    // 障碍墙高度
     visibleZ: -82,     // 跑道向前生成到多远
     cullZ: 16,         // 超过该 z 的赛道段回收
@@ -1345,8 +1352,9 @@
     forceGapSpeedFactor: 0.9,        // 最小间隔随速度放大：高速时留出更多反应距离
     shieldDurMs: 6000,               // 护盾生效时长（毫秒）
     magnetDurMs: 8000,               // 磁吸金球生效时长（毫秒）
-    slowDurMs: 5000,                 // 减速道具生效时长（毫秒）
-    slowFactor: 0.62,                // 减速期间的速度倍率
+    slowDurMs: 2500,                 // 减速道具生效时长（毫秒）
+    slowFactor: 0.82,                // 减速期间的速度倍率（最多降低 18%）
+    slowMinGapZ: 600,                // 两个减速道具之间的最小距离（米），避免频繁出现
     pickupLifeBonus: 1,              // 捡到"复活球"给的复活次数
     maxLives: 5,                     // 单局复活次数上限（初始 3 次，任务/道具最多叠加到 5）
     startLives: 3,                   // 每局初始复活次数
@@ -1385,8 +1393,11 @@
   const camera = new THREE.PerspectiveCamera(66, window.innerWidth / window.innerHeight, 0.1, 260);  // 2.5D 侧视：相机在跑道侧上方，跑道向画面纵深斜向延伸
   camera.position.set(12.2, 2.0, 10.2);
 
-  /* 低特效模式：帧率长期偏低时自动减少粒子数量 / 像素比（性能兼容） */
-  let lowFx = false;
+  /* 低特效模式：帧率长期偏低时自动减少粒子数量 / 像素比（性能兼容）
+     低内存移动设备在启动时直接进入低特效，避免一开始就掉帧；
+     只削减装饰（吊架 / 第二道刻度 / 粒子数量），核心玩法与跑道颜色语义不变 */
+  let lowFx = typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 4
+    && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
   /* 灯光：环境光负责基础明暗，跑道与小球的颜色主要来自自发光 */
   scene.add(new THREE.AmbientLight(0x88aaff, 0.6));
@@ -1602,13 +1613,23 @@
   // 深色金属跑道：科技纹理打底 + 青/金自发光，靠边灯与能量线识别颜色
   const techTex = makeTechTexture();
   const trackMats = COLORS.map((hex) => new THREE.MeshStandardMaterial({
-    color: 0x5b6c7b,          // 深色金属底，纹理负责细节
+    color: 0x46545f,          // 深色钛合金底：更低明度，保证是"金属跑道"而不是发光色块
     map: techTex,
     emissive: hex,
-    emissiveIntensity: 0.11,  // 只保留轻微颜色倾向，整体仍是深色跑道
-    metalness: 0.22,
-    roughness: 0.62,
+    emissiveIntensity: 0.075, // 只保留极轻微颜色倾向，颜色语义交给导轨与护栏灯带
+    metalness: 0.30,
+    roughness: 0.58,
   }));
+
+  /* --- 机械结构材质：护栏 / 悬浮支架统一使用深色钛合金 --- */
+  const railMetalMat = new THREE.MeshStandardMaterial({
+    color: 0x1b2732, metalness: 0.35, roughness: 0.5,
+  });
+  // 路面机械刻度：暗金属，不抢青/金判定色，但比路面略亮以便看清分段节奏
+  const tickMetalMat = new THREE.MeshStandardMaterial({
+    color: 0x44586a, emissive: 0x122b36, emissiveIntensity: 0.65,
+    metalness: 0.4, roughness: 0.45,
+  });
 
   // 跑道边线材质：不受光照/色调映射影响，保持干净锐利的高光线条
   const edgeMats = COLORS.map((hex) => new THREE.MeshBasicMaterial({
@@ -1891,31 +1912,67 @@
   scene.add(shieldRing);
 
   /* --- 磁吸视觉：磁吸生效时，小球周围环绕 3 个马蹄形磁铁（与护盾同样的环绕方式） --- */
-  /** 用 Canvas 画一张马蹄形磁铁图标纹理（U 形，两个极头用白色区分） */
+  /** 用 Canvas 画一张马蹄形磁铁图标纹理。
+   *  方向规范（V3）：底部圆弧朝下、两条腿向上、两个磁极在顶部，开口朝上；
+   *  整体垂直居中，不做任何倾斜，避免旋转动画里出现"倒置/歪斜"的观感。
+   *  配色：深色金属外轮廓 + 暖金主体，左磁极青色 / 右磁极金色，带柔和外发光。 */
   function makeMagnetTexture() {
     const s = 128;
     const cv = document.createElement('canvas');
     cv.width = cv.height = s;
     const g = cv.getContext('2d');
     g.translate(s / 2, s / 2);
-    g.lineCap = 'round';
-    // U 形本体：上半圆 + 两条向下伸出的腿
-    g.lineWidth = 20;
-    g.strokeStyle = 'rgba(255,214,130,.95)';
-    g.beginPath();
-    g.arc(0, -6, 26, Math.PI, 0, false);   // 上半圆，开口朝下
+    g.lineCap = 'butt';
+    g.lineJoin = 'round';
+
+    // U 形路径：左磁极 → 左腿向下 → 底部圆弧（朝下）→ 右腿向上 → 右磁极
+    const traceU = () => {
+      g.beginPath();
+      g.moveTo(-26, -32);
+      g.lineTo(-26, 4);
+      // anticlockwise=true：从 (-26,4) 经正下方 (0,30) 走到 (26,4)，圆弧底部朝下
+      g.arc(0, 4, 26, Math.PI, 0, true);
+      g.lineTo(26, -32);
+    };
+
+    // 1) 深色金属外轮廓：比主体略粗一圈，让图标在深空背景上有清晰边界
+    g.lineWidth = 24;
+    g.strokeStyle = 'rgba(6,14,24,.95)';
+    traceU();
     g.stroke();
-    g.beginPath();
-    g.moveTo(-26, -6); g.lineTo(-26, 30);  // 左腿
-    g.moveTo(26, -6);  g.lineTo(26, 30);   // 右腿
+
+    // 2) 暖金主体 + 柔和外发光
+    g.save();
+    g.shadowBlur = 12;
+    g.shadowColor = 'rgba(255,198,110,.9)';
+    g.lineWidth = 16;
+    g.strokeStyle = 'rgba(255,201,120,.98)';
+    traceU();
     g.stroke();
-    // 两个极头（白色端帽），让磁铁一眼可辨
-    g.lineWidth = 20;
-    g.strokeStyle = 'rgba(255,255,255,.95)';
+    g.restore();
+
+    // 3) 两端磁极：独立颜色（左青 / 右金），长度约占腿的 1/4，视觉上一眼可辨 N/S 极
+    g.lineWidth = 17;
+    g.strokeStyle = 'rgba(46,224,208,1)';      // 左磁极：青
     g.beginPath();
-    g.moveTo(-26, 20); g.lineTo(-26, 30);
-    g.moveTo(26, 20);  g.lineTo(26, 30);
+    g.moveTo(-26, -32); g.lineTo(-26, -16);
     g.stroke();
+    g.strokeStyle = 'rgba(255,178,74,1)';      // 右磁极：金
+    g.beginPath();
+    g.moveTo(26, -32); g.lineTo(26, -16);
+    g.stroke();
+
+    // 4) 磁极端面：一条亮色横线，强化"极头"结构
+    g.lineWidth = 4;
+    g.strokeStyle = 'rgba(233,255,252,.9)';
+    g.beginPath();
+    g.moveTo(-34, -32); g.lineTo(-18, -32);
+    g.stroke();
+    g.strokeStyle = 'rgba(255,241,214,.9)';
+    g.beginPath();
+    g.moveTo(18, -32); g.lineTo(34, -32);
+    g.stroke();
+
     const t = new THREE.CanvasTexture(cv);
     t.colorSpace = THREE.SRGBColorSpace;
     return t;
@@ -1925,14 +1982,18 @@
   const magnetRing = new THREE.Group();
   const MAGNET_COUNT = 3;
   for (let i = 0; i < MAGNET_COUNT; i++) {
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+    const mat = new THREE.SpriteMaterial({
       map: magnetTex,
-      color: 0xffd27a,
+      // 用白色保留 Canvas 里的青/金双色；染色会把两端磁极一起染成同色
+      color: 0xffffff,
       transparent: true,
       opacity: 1,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-    }));
+    });
+    // 贴图旋转固定为 0：磁铁始终"开口朝上"，任何动画都不再旋转图标本体
+    mat.rotation = 0;
+    const sp = new THREE.Sprite(mat);
     sp.scale.setScalar(0.85);
     const a = (i / MAGNET_COUNT) * Math.PI * 2;
     // 半径比护盾环略大、初始角度错开 60°，两个加成同时生效时不会叠在一起
@@ -1970,8 +2031,11 @@
     trailCursor = (trailCursor + 1) % TRAIL_MAX;
 
     const spread = CFG.ballR * 0.85;
-    p.life = 0.3;
-    p.max = 0.3;
+    // 拖尾长度与实际速度挂钩：速度越高，粒子存活越久、体积略大，形成更长的残影
+    const speedK = Math.min(1, Math.max(0, (state.speed - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed)));
+    const life = 0.26 + speedK * 0.17;      // 0.26s（低速）→ 0.43s（高速）
+    p.life = life;
+    p.max = life;
     p.sp.material.color.setHex(skinColor());   // 拖尾颜色跟随皮肤；默认皮肤跟随小球颜色
     p.sp.position.set(
       (Math.random() - 0.5) * spread,
@@ -1981,7 +2045,7 @@
     p.vx = (Math.random() - 0.5) * 1.4;
     p.vy = (Math.random() - 0.5) * 1.8;
     p.vz = state.speed * 0.45 + Math.random() * 3;
-    p.size = 0.4 + Math.random() * 0.34;
+    p.size = (0.34 + Math.random() * 0.3) * (1 + speedK * 0.45);
     p.sp.visible = true;
   }
 
@@ -2234,6 +2298,24 @@
     const tLineL = new THREE.Mesh(GEO.unit, edgeMats[0]);
     const tLineR = new THREE.Mesh(GEO.unit, edgeMats[0]);
 
+    /* --- 立体机械结构：护栏主体 + 护栏顶灯 + 路面刻度 + 悬浮支架 --- */
+    const bRailL = new THREE.Mesh(GEO.unit, railMetalMat);
+    const bRailR = new THREE.Mesh(GEO.unit, railMetalMat);
+    const tRailL = new THREE.Mesh(GEO.unit, railMetalMat);
+    const tRailR = new THREE.Mesh(GEO.unit, railMetalMat);
+    const bRailGlowL = new THREE.Mesh(GEO.unit, edgeMats[0]);
+    const bRailGlowR = new THREE.Mesh(GEO.unit, edgeMats[0]);
+    const tRailGlowL = new THREE.Mesh(GEO.unit, edgeMats[0]);
+    const tRailGlowR = new THREE.Mesh(GEO.unit, edgeMats[0]);
+    const bTickA = new THREE.Mesh(GEO.unit, tickMetalMat);
+    const bTickB = new THREE.Mesh(GEO.unit, tickMetalMat);
+    const tTickA = new THREE.Mesh(GEO.unit, tickMetalMat);
+    const tTickB = new THREE.Mesh(GEO.unit, tickMetalMat);
+    const bSpine = new THREE.Mesh(GEO.unit, railMetalMat);
+    const tSpine = new THREE.Mesh(GEO.unit, railMetalMat);
+    const bHanger = new THREE.Mesh(GEO.unit, railMetalMat);
+    const tHanger = new THREE.Mesh(GEO.unit, railMetalMat);
+
     // 激光横梁：每个赛道段一份材质，才能独立控制闪烁透明度
     const laserBeam = new THREE.Mesh(GEO.unit, laserMatBase.clone());
     const laserEmitL = new THREE.Mesh(GEO.unit, laserEmitMat);
@@ -2284,14 +2366,20 @@
     pickupRing.visible = false;
 
     group.add(bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR,
-      bLineL, bLineR, tLineL, tLineR, laserBeam, laserEmitL, laserEmitR, rotRing,
+      bLineL, bLineR, tLineL, tLineR,
+      bRailL, bRailR, tRailL, tRailR, bRailGlowL, bRailGlowR, tRailGlowL, tRailGlowR,
+      bTickA, bTickB, tTickA, tTickB, bSpine, tSpine, bHanger, tHanger,
+      laserBeam, laserEmitL, laserEmitR, rotRing,
       orbA, orbB, bPad, bPadGlow, bPadFrame, tPad, tPadGlow, tPadFrame,
       bHoleMark, tHoleMark, bSeam, tSeam, pickupCore, pickupRing);
     scene.add(group);
 
     return {
       group, bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR,
-      bLineL, bLineR, tLineL, tLineR, laserBeam, laserEmitL, laserEmitR, rotRing,
+      bLineL, bLineR, tLineL, tLineR,
+      bRailL, bRailR, tRailL, tRailR, bRailGlowL, bRailGlowR, tRailGlowL, tRailGlowR,
+      bTickA, bTickB, tTickA, tTickB, bSpine, tSpine, bHanger, tHanger,
+      laserBeam, laserEmitL, laserEmitR, rotRing,
       bPad, bPadGlow, bPadFrame, tPad, tPadGlow, tPadFrame,
       bHoleMark, tHoleMark, bSeam, tSeam, orbNodes: [orbA, orbB],
       far: 0, near: 0, len: 0,
@@ -2389,6 +2477,66 @@
     s.tLineR.scale.set(LN_W, LN_H, len);
     s.tLineR.position.set(LN_X, SURFACE_Y - 0.035, 0);
 
+    /* --- 立体护栏 + 机械刻度 + 悬浮支架 ---
+       上下两层各自形成“槽形”结构：护栏朝向小球一侧，外侧是深色钛合金，
+       顶边保留青/金灯带，既能强化 3D 结构又不会遮住轨道颜色。 */
+    const RAIL_X = CFG.halfW - 0.14;
+    const RAIL_H = 0.5, RAIL_T = 0.10;
+    const railBottomY = -SURFACE_Y + RAIL_H / 2;
+    const railTopY = SURFACE_Y - RAIL_H / 2;
+
+    s.bRailL.material = railMetalMat;
+    s.bRailL.scale.set(RAIL_T, RAIL_H, len * 0.995);
+    s.bRailL.position.set(-RAIL_X, railBottomY, 0);
+    s.bRailR.material = railMetalMat;
+    s.bRailR.scale.set(RAIL_T, RAIL_H, len * 0.995);
+    s.bRailR.position.set(RAIL_X, railBottomY, 0);
+
+    s.tRailL.material = railMetalMat;
+    s.tRailL.scale.set(RAIL_T, RAIL_H, len * 0.995);
+    s.tRailL.position.set(-RAIL_X, railTopY, 0);
+    s.tRailR.material = railMetalMat;
+    s.tRailR.scale.set(RAIL_T, RAIL_H, len * 0.995);
+    s.tRailR.position.set(RAIL_X, railTopY, 0);
+
+    // 护栏顶边灯带：朝小球一侧，是这层最直观的颜色标识
+    s.bRailGlowL.material = edgeMats[s.colorBottom];
+    s.bRailGlowL.scale.set(RAIL_T * 2.1, 0.045, len * 0.995);
+    s.bRailGlowL.position.set(-RAIL_X, -SURFACE_Y + RAIL_H + 0.01, 0);
+    s.bRailGlowR.material = edgeMats[s.colorBottom];
+    s.bRailGlowR.scale.set(RAIL_T * 2.1, 0.045, len * 0.995);
+    s.bRailGlowR.position.set(RAIL_X, -SURFACE_Y + RAIL_H + 0.01, 0);
+
+    s.tRailGlowL.material = edgeMats[s.colorTop];
+    s.tRailGlowL.scale.set(RAIL_T * 2.1, 0.045, len * 0.995);
+    s.tRailGlowL.position.set(-RAIL_X, SURFACE_Y - RAIL_H - 0.01, 0);
+    s.tRailGlowR.material = edgeMats[s.colorTop];
+    s.tRailGlowR.scale.set(RAIL_T * 2.1, 0.045, len * 0.995);
+    s.tRailGlowR.position.set(RAIL_X, SURFACE_Y - RAIL_H - 0.01, 0);
+
+    // 周期性机械刻度：沿赛道每段放两道，形成节奏感（不做碰撞）
+    const tickZ = len * 0.24;
+    s.bTickA.scale.set(W * 0.94, 0.04, 0.16);
+    s.bTickA.position.set(0, -SURFACE_Y + 0.02, -tickZ);
+    s.bTickB.scale.set(W * 0.94, 0.04, 0.16);
+    s.bTickB.position.set(0, -SURFACE_Y + 0.02, tickZ);
+    s.tTickA.scale.set(W * 0.94, 0.04, 0.16);
+    s.tTickA.position.set(0, SURFACE_Y - 0.02, -tickZ);
+    s.tTickB.scale.set(W * 0.94, 0.04, 0.16);
+    s.tTickB.position.set(0, SURFACE_Y - 0.02, tickZ);
+
+    // 悬浮支撑：底部中央龙骨 + 连接吊架，营造“悬浮轨道”的机械厚度
+    const slabBottomY = -(SURFACE_Y + 0.425);
+    const slabTopY = SURFACE_Y + 0.425;
+    s.bSpine.scale.set(0.6, 0.34, len * 0.9);
+    s.bSpine.position.set(0, slabBottomY - 0.66, 0);
+    s.tSpine.scale.set(0.6, 0.34, len * 0.9);
+    s.tSpine.position.set(0, slabTopY + 0.66, 0);
+    s.bHanger.scale.set(0.14, 0.5, 0.14);
+    s.bHanger.position.set(0, slabBottomY - 0.34, 0);
+    s.tHanger.scale.set(0.14, 0.5, 0.14);
+    s.tHanger.position.set(0, slabTopY + 0.34, 0);
+
     // --- 激光横梁：位于指定层的小球高度，横跨跑道 ---
     s.laserBeam.visible = s.laserLane >= 0;
     s.laserEmitL.visible = s.laserLane >= 0;
@@ -2417,6 +2565,14 @@
     s.bEdgeR.visible = !s.holeBottom;
     s.bLineL.visible = !s.holeBottom;
     s.bLineR.visible = !s.holeBottom;
+    s.bRailL.visible = !s.holeBottom;
+    s.bRailR.visible = !s.holeBottom;
+    s.bRailGlowL.visible = !s.holeBottom;
+    s.bRailGlowR.visible = !s.holeBottom;
+    s.bTickA.visible = !s.holeBottom;
+    s.bTickB.visible = !s.holeBottom;
+    s.bSpine.visible = !s.holeBottom;
+    s.bHanger.visible = !s.holeBottom;
     s.bHoleMark.visible = s.holeBottom;
     if (s.holeBottom) {
       s.bHoleMark.scale.set(W, 0.3, 0.5);
@@ -2429,6 +2585,14 @@
     s.tEdgeR.visible = !s.holeTop;
     s.tLineL.visible = !s.holeTop;
     s.tLineR.visible = !s.holeTop;
+    s.tRailL.visible = !s.holeTop;
+    s.tRailR.visible = !s.holeTop;
+    s.tRailGlowL.visible = !s.holeTop;
+    s.tRailGlowR.visible = !s.holeTop;
+    s.tTickA.visible = !s.holeTop;
+    s.tTickB.visible = !s.holeTop;
+    s.tSpine.visible = !s.holeTop;
+    s.tHanger.visible = !s.holeTop;
     s.tHoleMark.visible = s.holeTop;
     if (s.holeTop) {
       s.tHoleMark.scale.set(W, 0.3, 0.5);
@@ -2513,6 +2677,35 @@
       s.pickupCore.visible = false;
       s.pickupRing.visible = false;
     }
+  }
+
+  /**
+   * 道具类型权重：护盾 / 复活 / 磁吸保持正常频率，减速大幅降权。
+   * 减速额外受“不连续 + 600 米最小间距 + 后期更少”三重限制。
+   */
+  function choosePickupType(centerDist) {
+    // 注意：centerDist 是世界 z 坐标，越往远处越负，
+    // 所以「上次位置 - 当前位置」才是正的距离差，不能反过来算
+    const slowGapOk = state.lastSlowDist === -1
+      || (state.lastSlowDist - centerDist) >= CFG.slowMinGapZ;
+    const canSlow = state.lastPickupType !== 'slow' && slowGapOk;
+    // 8% → 4.5% → 2.5%，相比原先四等分 25% 降低约 68%~90%
+    const slowW = !canSlow ? 0
+      : (state.stage >= 4 ? 0.025 : (state.stage === 3 ? 0.045 : 0.08));
+    const weights = [
+      ['shield', 0.42],
+      ['life', 0.20],
+      ['magnet', 0.30],
+      ['slow', slowW],
+    ];
+    let total = 0;
+    for (const w of weights) total += w[1];
+    let r = Math.random() * total;
+    for (const w of weights) {
+      r -= w[1];
+      if (r <= 0) return w[0];
+    }
+    return 'shield';
   }
 
   /** 规划这一段该出现什么颜色 / 障碍 */
@@ -2653,8 +2846,10 @@
       let lane = Math.random() < 0.5 ? 0 : 1;
       if (lane === 0 && blockedBottom) lane = 1;
       else if (lane === 1 && blockedTop) lane = 0;
-      const type = CFG.pickupTypes[Math.floor(Math.random() * CFG.pickupTypes.length)];
+      const type = choosePickupType(center);
       s.pickup = { type, lane, z: (Math.random() * 0.5 - 0.2) * len, taken: false };
+      state.lastPickupType = type;
+      if (type === 'slow') state.lastSlowDist = center;
     }
 
     // 护盾道具尽量出现在障碍物"前面"：本段有障碍/断裂时，有概率在更靠近玩家的上一段补一个护盾，
@@ -2671,6 +2866,7 @@
           if (lane === 0 && pbBlocked) lane = 1;
           else if (lane === 1 && ptBlocked) lane = 0;
           prevSeg.pickup = { type: 'shield', lane, z: (Math.random() * 0.4 - 0.1) * prevSeg.len, taken: false };
+          state.lastPickupType = 'shield';   // 最近的拾取物变成护盾，避免下一段紧接着刷减速
           layoutSegment(prevSeg);   // 重新布局，让这个补出来的护盾立刻显示
         }
       }
@@ -2791,6 +2987,8 @@
     armedCount: 0,          // 本局已生成的强制障碍数（第 0 个用于教学引导）
     lastFlipAward: 0,       // 上次翻转奖励的时间戳（防止狂按刷分）
     flipGlow: 0,            // 翻转瞬间的跑道边缘增亮（逐帧衰减）
+    lastPickupType: '',     // 最近一个生成的道具类型（用于禁止连续减速）
+    lastSlowDist: -1,       // 最近一个减速道具出现的里程（用于最小间距限制）
   };
 
   /* ==========================================================
@@ -4136,6 +4334,13 @@
     tone(880 + Math.min(state.orbs, 12) * 55, 0.09, 'triangle', 0.045, 1300);
   }
 
+  // 拾取提示里的磁铁图标：与 HUD 同一套 U 形造型（开口朝上、左青右金），
+  // 用内联 SVG 字符串拼进提示文案，避免 emoji 在不同系统上显示成倒置/歪斜
+  const MAGNET_ICON_SVG = '<svg class="ico-magnet" viewBox="0 0 24 24" aria-hidden="true">'
+    + '<path d="M6.2 3.2v7.4a5.8 5.8 0 0 0 11.6 0V3.2" fill="none" stroke="currentColor" stroke-width="4.2"/>'
+    + '<path d="M6.2 3.2v3.4" stroke="#20dccb" stroke-width="4.2"/>'
+    + '<path d="M17.8 3.2v3.4" stroke="#ffb94f" stroke-width="4.2"/></svg>';
+
   /** 拾取道具：护盾 / 磁吸 / 减速可并存，复活球叠加 lives */
   function applyPickup(type) {
     const now = performance.now();
@@ -4151,7 +4356,7 @@
       burstColor = 0x7ec8ff;
     } else if (type === 'magnet') {
       state.magnetUntil = now + CFG.magnetDurMs;
-      label = '🧲 磁吸激活！';
+      label = MAGNET_ICON_SVG + ' 磁吸激活！';
       burstColor = 0xffd27a;
     } else if (type === 'slow') {
       state.slowUntil = now + CFG.slowDurMs;
@@ -4170,7 +4375,8 @@
     spawnBurst(0, state.ballY + 0.2, 0.6, burstColor, 12, 3.4, 0.3);
 
     // 道具拾取 HUD 提示（约 1.2 秒自动消失）
-    pickupTxt.textContent = label;
+    // 磁吸文案里带了内联 SVG 图标，因此用 innerHTML 渲染（内容均为固定常量，无外部输入）
+    pickupTxt.innerHTML = label;
     pickupToast.classList.add('on');
     clearTimeout(pickupToast._t);
     pickupToast._t = setTimeout(() => pickupToast.classList.remove('on'), 1100);
@@ -4695,6 +4901,8 @@
     state.armedCount = 0;
     state.lastFlipAward = 0;
     state.flipGlow = 0;
+    state.lastPickupType = '';
+    state.lastSlowDist = -1;
     state.beatPrev = false;
     state.overReadyAt = 0;
     warnEl.classList.remove('on');
@@ -4702,6 +4910,7 @@
     comboEl.classList.remove('on');
     msEl.classList.remove('on');
     speedFx.classList.remove('on');
+    speedFx.style.opacity = '0';   // 速度光已改为按实际速度逐帧设置，重开时清零避免残留
     newRecordTag.classList.add('hide');
     overGap.hidden = true;
     overGap.textContent = '';
@@ -5098,8 +5307,14 @@
       if (state.boostTime > 0) state.boostTime -= dt;
     }
 
-    // 加速带生效期间临时提速；减速道具生效期间整体降速
-    const slowMul = performance.now() < state.slowUntil ? CFG.slowFactor : 1;
+    // 减速道具：0.25 秒淡入、结束前 0.5 秒淡出，速度平滑恢复，不会突然跳变
+    const slowRemainMs = state.slowUntil - performance.now();
+    let slowEase = 0;
+    if (slowRemainMs > 0) {
+      const elapsed = CFG.slowDurMs - slowRemainMs;
+      slowEase = Math.min(1, elapsed / 250) * Math.min(1, slowRemainMs / 500);
+    }
+    const slowMul = 1 - (1 - CFG.slowFactor) * slowEase;
     const spd = state.speed * (state.boostTime > 0 ? 1.38 : 1) * slowMul;
 
     // 复活演出期间：赛道不再正常滚动、分数与里程也不推进
@@ -5205,7 +5420,9 @@
     if (playing && !reviveFxUntil && !state.revivePhase) {
       trailTimer -= dt;
       if (trailTimer <= 0) {
-        trailTimer = lowFx ? 0.026 : 0.014;   // 低特效时降低发射频率
+        // 速度越快发射越密，拖尾视觉长度与实际速度同步
+        const speedT = Math.min(1, Math.max(0, (state.speed - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed)));
+        trailTimer = (lowFx ? 0.026 : 0.013) - speedT * 0.004;
         emitTrailParticle();
       }
     }
@@ -5226,8 +5443,11 @@
       skinShell.scale.setScalar(4.1 + Math.sin(performance.now() * 0.006) * 0.25);
     }
 
-    // 加速带期间显示边缘速度光（不遮挡跑道中央）
-    speedFx.classList.toggle('on', playing && state.boostTime > 0);
+    // 边缘速度光：强度直接由「实际速度」驱动（加速带再额外拉满），
+    // 不再只靠 class 开关，保证画面速度感与真实速度同步、不会出现"显示快但跑道慢"
+    const speedK = Math.min(1, Math.max(0, (state.speed - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed)));
+    const speedGlow = playing ? Math.min(1, speedK * 0.55 + (state.boostTime > 0 ? 0.8 : 0)) : 0;
+    speedFx.style.opacity = speedGlow.toFixed(3);
 
     // 光晕呼吸（复活演出期间隐藏光晕，避免提前暴露小球位置）
     if (state.revivePhase || reviveFxUntil) ballGlow.material.opacity = 0;
@@ -5249,6 +5469,11 @@
         if (s.rotPhase >= 0) {
           s.rotRing.rotation.z = s.rotPhase + (nowMs * 0.001) * s.rotSpeed;
         }
+        // 低特效模式：隐藏部分装饰结构（护栏与主龙骨保留，保证 3D 结构仍清晰）
+        s.bHanger.visible = !s.holeBottom && !lowFx;
+        s.tHanger.visible = !s.holeTop && !lowFx;
+        s.bTickB.visible = !s.holeBottom && !lowFx;
+        s.tTickB.visible = !s.holeTop && !lowFx;
       }
     }
 
@@ -5257,6 +5482,9 @@
       const seg = currentSegment();
       const nowMs = performance.now();
       const laneNow = state.gravity < 0 ? 0 : 1;
+      // 本帧实际前进距离：低帧率 / 加速带叠加时单帧位移会变大，
+      // 判定带按此补偿，避免"高速直接跨过障碍"的穿透
+      const stepZ = Math.max(0, spd * dt);
 
       if (seg) {
         /* 4.0 断裂跑道：小球所在层整段没有跑道 → 直接坠落 */
@@ -5266,9 +5494,11 @@
         }
 
         /* 4.1 障碍墙：物理判定（球心高度是否越过墙顶）
-           判定半径 / 高度各放宽一点点，避免“视觉上已经擦过却判死”的挫败感 */
+           判定半径 / 高度各放宽一点点，避免“视觉上已经擦过却判死”的挫败感；
+           单帧位移过大（低帧率/加速带）时同步加宽 z 判定带，防止穿墙 */
         const blen = Math.max(2.0, Math.min(seg.len * 0.42, 4.2));
-        const overlapZ = Math.abs(seg.group.position.z) < blen / 2 + CFG.ballR * 0.78;
+        const stepPad = Math.max(0, stepZ - 1.6) * 0.5;
+        const overlapZ = Math.abs(seg.group.position.z) < blen / 2 + CFG.ballR * 0.78 + stepPad;
 
         if (overlapZ && seg.barrierBottom && state.ballY - CFG.ballR < -CFG.halfH + CFG.barrierH - 0.07) {
           die('撞上障碍');
@@ -5279,10 +5509,11 @@
           return;
         }
 
-        /* 4.1b 激光横梁：只在该层、且光束开启时致命；关闭时可以安全穿过 */
+        /* 4.1b 激光横梁：只在该层、且光束开启时致命；关闭时可以安全穿过
+           z 判定带随单帧位移补偿，高速时不会一帧跨过激光 */
         if (seg.laserLane >= 0) {
           const wz = seg.group.position.z + seg.laserZ;
-          if (Math.abs(wz) < 1.7 && laneNow === seg.laserLane) {
+          if (Math.abs(wz) < 1.7 + stepPad && laneNow === seg.laserLane) {
             const ph = ((nowMs + seg.laserPhase) % 3000 + 3000) % 3000;
             if (ph < 1800) {
               die('被激光击中');
@@ -5294,7 +5525,7 @@
         /* 4.1c 旋转能量环：环体扫过的角度致命，缺口是唯一安全层
            环几何弧长 = 1.15π，缺口 0.85π，上下两层恰好一危一安 */
         if (seg.rotPhase >= 0) {
-          if (Math.abs(seg.group.position.z) < 1.7) {
+          if (Math.abs(seg.group.position.z) < 1.7 + stepPad) {
             const ballAng = state.gravity < 0 ? -Math.PI / 2 : Math.PI / 2;
             const arc = Math.PI * 1.15;
             const rot = seg.rotRing.rotation.z;
@@ -5314,6 +5545,8 @@
       }
 
       /* 4.4 光点收集 / 加速带 / 弹跳板 */
+      // 拾取类判定窗口随单帧位移略微放宽：高速时不会"擦过却没吃到"
+      const grabPad = Math.min(1.0, stepZ * 0.5);
       for (let i = 0; i < segments.length; i++) {
         const s = segments[i];
         const gz = s.group.position.z;
@@ -5336,7 +5569,7 @@
           if (wz > 1.8) {
             s.orbTaken[k] = true;            // 已经掠过小球 → 丢弃（漏吃不清空连击）
             s.orbNodes[k].visible = false;
-          } else if (Math.abs(wz) < 1.15 && Math.abs(state.ballY - oy) < 1.25) {
+          } else if (Math.abs(wz) < 1.15 + grabPad && Math.abs(state.ballY - oy) < 1.25) {
             s.orbTaken[k] = true;
             s.orbNodes[k].visible = false;
             pickOrb();
@@ -5348,16 +5581,15 @@
           const wz = gz + s.padZ;
           const py = s.padLane === 0 ? -BALL_REST_Y : BALL_REST_Y;
 
-          if (Math.abs(wz) < 1.1 && Math.abs(state.ballY - py) < 0.9) {
+          if (Math.abs(wz) < 1.1 + grabPad && Math.abs(state.ballY - py) < 0.9) {
             s.padHit = true;
             if (s.padType === 'jump') {
               flipGravity();                 // 弹跳板：强制换层
               state.ballVel = state.gravity * 11;
             } else {
-              // 加速带：短暂提速 + 金色粒子 + 边缘速度光
+              // 加速带：短暂提速 + 金色粒子 + 边缘速度光（速度光由主循环按速度自动增强）
               state.boostTime = 1.15;
               spawnBurst(0, state.ballY, 0.4, 0xffe39a, 10, 3.6, 0.28);
-              speedFx.classList.add('on');
               tone(520, 0.16, 'square', 0.042, 1040);
             }
           }
@@ -5371,7 +5603,7 @@
 
           // 磁吸生效时：金球会被"吸"向小球。这里道具本身保持原样，
           // 磁吸逻辑单独在下面（对 orbs 做位置修正）
-          if (Math.abs(wz) < 1.2 && Math.abs(state.ballY - py) < 1.3) {
+          if (Math.abs(wz) < 1.2 + grabPad && Math.abs(state.ballY - py) < 1.3) {
             pu.taken = true;
             s.pickupCore.visible = false;
             s.pickupRing.visible = false;
@@ -5434,8 +5666,10 @@
     const moodK = Math.min(1, dt * 0.7);
     scene.fog.color.lerp(moodFog, moodK);
     scene.background.lerp(moodFog, moodK);
-    // 跑道边缘霓虹呼吸：只改变泛光透明度，不影响颜色判定
-    const neonPulse = 0.10 + Math.sin(performance.now() * 0.0028) * 0.035 + state.flipGlow * 0.18;
+    // 跑道边缘霓虹呼吸：只改变泛光透明度，不影响颜色判定。
+    // 速度越高，灯带整体越亮，配合段移动形成"能量被拉长"的高速感
+    const neonPulse = 0.075 + Math.sin(performance.now() * 0.0028) * 0.03
+      + state.flipGlow * 0.18 + speedK * 0.065;
     state.flipGlow *= Math.pow(0.03, dt);
     glowMats[0].opacity = neonPulse;
     glowMats[1].opacity = neonPulse;
@@ -5443,15 +5677,22 @@
     const camTargetY = 2.0 + state.ballY * 0.1;
     camera.position.y += (camTargetY - camera.position.y) * Math.min(1, dt * 5);
 
+    // 高速阶段的轻微镜头震动：只在约 55% 以上速度出现，幅度很小，
+    // 既能提供速度压迫感，又不会干扰障碍与激光的识别
+    const hiSpeedK = Math.max(0, speedK - 0.55) / 0.45;
+    if (hiSpeedK > 0 && playing) state.shake = Math.max(state.shake, hiSpeedK * 0.055);
+
     const shake = state.shake;
     state.shake *= Math.pow(0.02, dt);
     camera.position.x = 12.2 + (Math.random() - 0.5) * shake * 0.55;
     camera.position.y += (Math.random() - 0.5) * shake * 0.45;
     camera.lookAt(-0.9, -0.3 + state.ballY * 0.12, -11.5);
 
-    // 竖屏用更宽的基础视野（78°），横屏 66°；再叠加速度感
+    // 竖屏用更宽的基础视野（78°），横屏 66°；再叠加速度感。
+    // FOV 直接跟随实际速度扩张，并限制在 88° 以内，避免竖屏边缘过度拉伸
     const baseFov = window.innerWidth < window.innerHeight ? 78 : 66;
-    const fovTarget = baseFov + (state.speed - CFG.baseSpeed) / (CFG.maxSpeed - CFG.baseSpeed) * 9;
+    const boostFov = state.boostTime > 0 ? 2 : 0;
+    const fovTarget = Math.min(88, baseFov + speedK * 12 + boostFov);
     if (Math.abs(camera.fov - fovTarget) > 0.02) {
       camera.fov += (fovTarget - camera.fov) * Math.min(1, dt * 3);
       camera.updateProjectionMatrix();
