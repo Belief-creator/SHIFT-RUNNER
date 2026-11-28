@@ -341,6 +341,129 @@
     .over-score{margin-top:14px;padding:8px 24px 12px;font-size:38px;}
   }
 
+  /* ============ 暂停按钮 / 暂停页 ============ */
+  /* 暂停按钮放在右侧屏幕中部：避开顶部状态卡与底部触控按钮 */
+  #btnPause{
+    position:fixed;right:calc(14px + env(safe-area-inset-right));top:50%;
+    transform:translateY(-50%);z-index:7;
+    width:44px;height:44px;padding:0;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:inherit;font-size:13px;letter-spacing:0;
+    border:1px solid rgba(120,205,192,.34);background:rgba(8,16,22,.62);
+    color:#dff6f2;cursor:pointer;pointer-events:auto;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    box-shadow:0 0 20px rgba(46,211,190,.16);
+  }
+  #btnPause:active{transform:translateY(-50%) scale(.93);}
+  #btnPause.hide{opacity:0;pointer-events:none;}
+  .pause-tip{margin-top:12px;font-size:11px;letter-spacing:.18em;color:rgba(175,215,210,.55);}
+
+  /* ============ 结算页成绩明细 ============ */
+  .over-stats{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+    margin:16px auto 0;max-width:430px;width:100%;
+  }
+  .os-item{
+    padding:9px 6px;border-radius:11px;text-align:center;
+    background:rgba(255,255,255,.04);border:1px solid rgba(120,205,192,.14);
+  }
+  .os-item span{display:block;font-size:9px;letter-spacing:.14em;color:rgba(160,210,205,.55);}
+  .os-item b{display:block;margin-top:5px;font-size:15px;color:#eafcff;font-variant-numeric:tabular-nums;}
+
+  /* ============ 主页个人等级卡 ============ */
+  .profile-card{
+    display:flex;align-items:center;gap:12px;margin-top:16px;padding:11px 14px;border-radius:14px;
+    background:linear-gradient(120deg,rgba(46,211,190,.12),rgba(242,174,60,.05));
+    border:1px solid rgba(120,205,192,.2);text-align:left;
+  }
+  .pc-lv{flex:none;font-size:9px;letter-spacing:.14em;color:rgba(190,235,230,.65);}
+  .pc-lv b{display:block;margin-top:2px;font-size:20px;color:#fff;text-shadow:0 0 14px rgba(46,211,190,.6);}
+  .pc-mid{flex:1;min-width:0;}
+  .pc-xp{height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;}
+  .pc-xp i{display:block;height:100%;width:0;border-radius:999px;
+    background:linear-gradient(90deg,var(--c1),var(--c2));box-shadow:0 0 10px rgba(46,211,190,.6);
+    transition:width .4s ease;}
+  .pc-xpTxt{margin-top:5px;font-size:9px;letter-spacing:.08em;color:rgba(175,215,210,.55);}
+  .pc-money{flex:none;display:flex;flex-direction:column;gap:4px;align-items:flex-end;
+    font-size:9px;letter-spacing:.06em;color:rgba(255,214,150,.8);}
+  .pc-money b{color:#fff3d6;font-size:11px;font-variant-numeric:tabular-nums;}
+
+  /* ============ 皮肤 / 每日任务列表 ============ */
+  .skin-list,.daily-list{display:grid;gap:9px;margin:18px 0;max-height:52vh;overflow:auto;text-align:left;}
+  .skin-row,.daily-row{
+    display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:13px;
+    background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.012));
+    border:1px solid rgba(255,255,255,.07);
+  }
+  .skin-row.on{border-color:rgba(46,211,190,.5);box-shadow:0 0 20px rgba(46,211,190,.16);}
+  .skin-row.locked{opacity:.55;}
+  .skin-dot{
+    flex:none;width:36px;height:36px;border-radius:50%;
+    background:radial-gradient(circle at 34% 30%,#fff,var(--dot,#2ed3be));
+    box-shadow:0 0 16px var(--dot,#2ed3be);
+  }
+  .skin-main,.daily-main{flex:1;min-width:0;}
+  .skin-name,.daily-name{font-size:13px;letter-spacing:.06em;color:#eafcff;}
+  .skin-desc,.daily-desc{margin-top:3px;font-size:10px;letter-spacing:.04em;color:rgba(175,215,210,.55);}
+  .skin-act{flex:none;}
+  .skin-act .btn{padding:7px 14px;font-size:10px;letter-spacing:.12em;}
+  .daily-bar{margin-top:6px;height:5px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;}
+  .daily-bar i{display:block;height:100%;width:0;border-radius:999px;
+    background:linear-gradient(90deg,var(--c1),var(--c2));}
+  .daily-prog{margin-top:4px;font-size:9px;letter-spacing:.06em;color:rgba(175,215,210,.5);}
+  .daily-reward{font-size:9px;color:rgba(255,214,150,.85);margin-top:2px;}
+
+  /* ============ 设置页 ============ */
+  .set-list{margin:18px auto;display:grid;gap:12px;max-width:420px;text-align:left;}
+  .set-row{
+    display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:12px;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+  }
+  .set-row label{flex:1;font-size:12px;letter-spacing:.1em;color:#dff2f0;}
+  .set-row output{width:38px;text-align:right;font-size:11px;color:#ffd88f;font-variant-numeric:tabular-nums;}
+  .set-row input[type=range]{flex:1.5;height:20px;accent-color:#2ed3be;}
+
+  /* ============ 飘字 / 速度感 / 翻转镜头反馈 ============ */
+  #floatLayer{position:fixed;inset:0;z-index:9;pointer-events:none;overflow:hidden;}
+  .float-pt{
+    position:absolute;font-size:16px;font-weight:800;color:#ffe7bc;
+    text-shadow:0 0 14px rgba(242,174,60,.9);
+    transform:translate(-50%,-50%);
+    animation:floatUp .85s ease-out forwards;
+  }
+  @keyframes floatUp{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(.7);}
+    18%{opacity:1;transform:translate(-50%,-95%) scale(1.12);}
+    100%{opacity:0;transform:translate(-50%,-270%) scale(.9);}
+  }
+  /* 加速带触发时的边缘速度光，不遮挡跑道中央 */
+  #speedFx{
+    position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;
+    transition:opacity .3s ease;
+    background:radial-gradient(ellipse at 50% 58%,rgba(46,211,190,0) 34%,rgba(46,211,190,.18) 100%);
+  }
+  #speedFx.on{opacity:1;}
+  /* 重力翻转：画面轻微滚转，强化“空间翻转”的体感（幅度很小，不影响判断） */
+  #game.flip{animation:flipRoll .4s ease;}
+  @keyframes flipRoll{
+    0%{transform:rotate(0deg) scale(1);}
+    35%{transform:rotate(-4deg) scale(1.015);}
+    100%{transform:rotate(0deg) scale(1);}
+  }
+
+  /* 减速道具增益条颜色（紫色，与护盾蓝 / 磁吸金 / 复活粉区分） */
+  .buff-slow{
+    color:#b9a2ff;
+    box-shadow:0 0 22px rgba(185,162,255,.38),inset 0 1px 0 rgba(255,255,255,.15);
+  }
+
+  /* 结算页解锁条目逐条淡入，强化“解锁动画” */
+  .ou-item{animation:ouIn .42s cubic-bezier(.2,1.5,.4,1) both;}
+  @keyframes ouIn{
+    from{opacity:0;transform:translateY(10px);}
+    to{opacity:1;transform:none;}
+  }
+
   /* 加载提示 */
   #boot{
     position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
@@ -415,9 +538,10 @@
   .mode-name{font-size:14px;font-weight:700;letter-spacing:.2em;color:#eafcff;}
   .mode-desc{margin-top:7px;font-size:10.5px;letter-spacing:.08em;color:rgba(175,215,210,.55);}
   .mode-meta{margin-top:12px;font-size:10px;letter-spacing:.14em;color:rgba(242,190,110,.85);}
-  /* 主页底部两个入口（排行榜 / 成就）并排显示 */
+  /* 主页功能入口：两列网格，设置项占满一行（保持整洁不拥挤） */
   .home-links{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
-  .home-links .btn{width:100%;}
+  .home-links .btn{width:100%;padding:10px 8px;font-size:11px;letter-spacing:.18em;}
+  .home-links .wide{grid-column:1 / -1;}
 
   /* ============ 关卡列表 ============ */
   .levels{display:grid;gap:9px;margin:20px 0 18px;max-height:46vh;overflow:auto;}
@@ -535,6 +659,8 @@
   .stars .off{color:rgba(255,255,255,.12);text-shadow:none;}
   .over-title.ok{color:#8ef0d8;text-shadow:0 0 26px rgba(46,211,190,.6);}
   .goal-line{margin-top:5px;font-size:10px;letter-spacing:.12em;color:rgba(255,214,150,.8);}
+  /* 无尽模式隐藏「目标距离」；早期缺少这条规则导致目标 0 M 常驻 */
+  .goal-line.hide{display:none;}
 
   /* ============ 低分 / 高亮反馈（本批新增） ============ */
 
@@ -656,9 +782,15 @@
   <div class="vignette"></div>
   <div class="scan"></div>
   <div class="flash" id="flash"></div>
+  <!-- 光点飘字层：吃到光点时在其上方冒出 +1 -->
+  <div id="floatLayer"></div>
+  <!-- 加速带触发的边缘速度光 -->
+  <div id="speedFx"></div>
 
   <!-- ===================== HUD ===================== -->
   <div id="hud">
+    <!-- 暂停按钮：游戏中常驻，点击 / P / Esc 均可暂停 -->
+    <button id="btnPause" type="button" title="暂停 (P)">II</button>
     <!-- 上部整体容器：距离卡 + 护盾/磁吸状态条（状态条改为文档流内，避免遮挡左侧爱心） -->
     <div class="hud-upper">
     <div class="hud-top">
@@ -682,17 +814,18 @@
       </div>
     </div>
 
-    <!-- 道具增益状态条：护盾 / 磁吸生效时各占一条，倒计时内自动消失 -->
+    <!-- 道具增益状态条：护盾 / 磁吸 / 减速生效时各占一条，倒计时内自动消失 -->
     <div class="hud-buffs" id="buffsBar" hidden>
       <div class="buff buff-shield" id="buffShield" hidden>🛡 护盾 <b id="shieldRemain">0</b>s</div>
       <div class="buff buff-magnet" id="buffMagnet" hidden>🧲 磁吸 <b id="magnetRemain">0</b>s</div>
+      <div class="buff buff-slow" id="buffSlow" hidden>⏱ 减速 <b id="slowRemain">0</b>s</div>
     </div>
     </div>
 
     <div class="hud-bottom">
       <div class="hint"><span class="key">SHIFT</span> 翻转重力</div>
       <div class="hint"><span class="key">SPACE</span> 切换颜色</div>
-      <div class="hint"><span class="key">M</span> 静音</div>
+      <div class="hint"><span class="key">M</span> 静音 <span class="key">P</span> 暂停</div>
     </div>
   </div>
 
@@ -752,11 +885,24 @@
         <button id="changeName" class="link" type="button">退出登录</button>
       </div>
 
+      <!-- 个人等级 / 经验 / 金币碎片：一眼看到成长进度 -->
+      <div class="profile-card">
+        <div class="pc-lv">LV<b id="homeLv">1</b></div>
+        <div class="pc-mid">
+          <div class="pc-xp"><i id="homeXpFill"></i></div>
+          <div class="pc-xpTxt" id="homeXpTxt">0 / 500 EXP</div>
+        </div>
+        <div class="pc-money">
+          <span>金币 <b id="homeCoins">0</b></span>
+          <span>碎片 <b id="homeShards">0</b></span>
+        </div>
+      </div>
+
       <div class="modes">
         <button class="mode" id="modeCampaign" type="button">
           <div class="mode-name">闯 关 模 式</div>
           <div class="mode-desc">固定关卡 · 星级挑战</div>
-          <div class="mode-meta" id="campaignMeta">已通关 0 / 5</div>
+          <div class="mode-meta" id="campaignMeta">已通关 0 / 10</div>
         </button>
         <button class="mode" id="modeEndless" type="button">
           <div class="mode-name">无 尽 模 式</div>
@@ -768,6 +914,9 @@
       <div class="home-links">
         <button id="openBoard" class="btn ghost" type="button">排 行 榜</button>
         <button id="openMedals" class="btn ghost" type="button">成 就</button>
+        <button id="openSkins" class="btn ghost" type="button">皮 肤</button>
+        <button id="openDaily" class="btn ghost" type="button">每日任务</button>
+        <button id="openSettings" class="btn ghost wide" type="button">设 置</button>
       </div>
 
       <div class="rules">
@@ -810,6 +959,51 @@
     </div>
   </div>
 
+  <!-- ===================== 皮肤 ===================== -->
+  <div class="overlay hide" id="skinScreen">
+    <div class="panel">
+      <div class="over-title">小 球 皮 肤</div>
+      <div class="over-reason">只改变外观，不影响任何属性</div>
+      <div class="skin-list" id="skinList"></div>
+      <button class="btn ghost" id="skinBack" type="button">返回主页</button>
+    </div>
+  </div>
+
+  <!-- ===================== 每日任务 ===================== -->
+  <div class="overlay hide" id="dailyScreen">
+    <div class="panel">
+      <div class="over-title">每 日 任 务</div>
+      <div class="over-reason" id="dailyNote">每天 0 点刷新，进度自动保存</div>
+      <div class="daily-list" id="dailyList"></div>
+      <button class="btn ghost" id="dailyBack" type="button">返回主页</button>
+    </div>
+  </div>
+
+  <!-- ===================== 设置 ===================== -->
+  <div class="overlay hide" id="settingsScreen">
+    <div class="panel">
+      <div class="over-title">设 置</div>
+      <div class="over-reason">音量独立控制 · 设置自动保存</div>
+      <div class="set-list">
+        <div class="set-row">
+          <label for="volBgm">背景音乐</label>
+          <input type="range" id="volBgm" min="0" max="100" value="40" />
+          <output id="volBgmVal">40</output>
+        </div>
+        <div class="set-row">
+          <label for="volSfx">游戏音效</label>
+          <input type="range" id="volSfx" min="0" max="100" value="85" />
+          <output id="volSfxVal">85</output>
+        </div>
+        <div class="set-row">
+          <label for="btnMute">总静音</label>
+          <button class="btn ghost" id="btnMute" type="button">关闭</button>
+        </div>
+      </div>
+      <button class="btn ghost" id="settingsBack" type="button">返回主页</button>
+    </div>
+  </div>
+
   <!-- ===================== 结束界面 ===================== -->
   <div class="overlay hide" id="overScreen">
     <div class="panel">
@@ -825,6 +1019,16 @@
       <div class="over-gap" id="overGap" hidden></div>
       <div class="over-rank" id="overRank"></div>
 
+      <!-- 本局成绩明细：最高速度 / 最高连击 / 光点 / 翻转 / 道具 -->
+      <div class="over-stats">
+        <div class="os-item"><span>最高速度</span><b id="osSpeed">0</b></div>
+        <div class="os-item"><span>最高连击</span><b id="osCombo">0</b></div>
+        <div class="os-item"><span>光点</span><b id="osOrbs">0</b></div>
+        <div class="os-item"><span>重力翻转</span><b id="osFlip">0</b></div>
+        <div class="os-item"><span>使用道具</span><b id="osPickup">0</b></div>
+        <div class="os-item"><span>存活时间</span><b id="osTime">0s</b></div>
+      </div>
+
       <!-- 本局解锁的勋章 / 任务：统一列表排版，没有解锁时整块隐藏 -->
       <div class="over-unlocks" id="overUnlocks" hidden>
         <div class="ou-title">本 局 解 锁</div>
@@ -833,9 +1037,24 @@
 
       <div class="btns">
         <button class="btn primary big" id="btnRetry" type="button">再 来 一 局</button>
+        <button class="btn ghost" id="btnOverBoard" type="button">查看排行榜</button>
         <button class="btn ghost" id="btnHome" type="button">返回主页</button>
       </div>
       <div class="cta">空格 / 回车 快速重开</div>
+    </div>
+  </div>
+
+  <!-- ===================== 暂停 ===================== -->
+  <div class="overlay hide" id="pauseScreen">
+    <div class="panel">
+      <div class="over-title">PAUSED</div>
+      <div class="over-reason">游戏已暂停</div>
+      <div class="pause-tip">按 P / Esc 或点击「继续游戏」恢复</div>
+      <div class="btns">
+        <button class="btn primary big" id="btnResume" type="button">继 续 游 戏</button>
+        <button class="btn ghost" id="btnPauseRestart" type="button">重新开始</button>
+        <button class="btn ghost" id="btnPauseHome" type="button">返回主页</button>
+      </div>
     </div>
   </div>
 
@@ -930,11 +1149,14 @@
 
     /* --- 道具系统 --- */
     pickupChance: 0.18,              // 每段赛道生成道具的概率（0~1）
-    pickupTypes: ['shield', 'life', 'magnet'], // 三种道具；生成时随机选
+    pickupTypes: ['shield', 'life', 'magnet', 'slow'], // 四种道具：护盾 / 复活 / 磁吸 / 减速
     shieldBeforeObstacleChance: 0.5, // 本段有障碍时，在它前面一段补一个护盾道具的概率
     forceGapZ: 18,                   // 两次“必须换层”（障碍墙/断裂）之间的最小间隔（米）
+    forceGapSpeedFactor: 0.9,        // 最小间隔随速度放大：高速时留出更多反应距离
     shieldDurMs: 6000,               // 护盾生效时长（毫秒）
     magnetDurMs: 8000,               // 磁吸金球生效时长（毫秒）
+    slowDurMs: 5000,                 // 减速道具生效时长（毫秒）
+    slowFactor: 0.62,                // 减速期间的速度倍率
     pickupLifeBonus: 1,              // 捡到"复活球"给的复活次数
     maxLives: 5,                     // 单局复活次数上限（初始 3 次，任务/道具最多叠加到 5）
     startLives: 3,                   // 每局初始复活次数
@@ -945,6 +1167,9 @@
 
     /* --- 任务 / 勋章 --- */
     taskProgressSaveKey: 'sr_tasks', // 任务 / 勋章存档键（localStorage）
+    dailySaveKey: 'sr_daily_v1',     // 每日任务存档键
+    skinSaveKey: 'sr_skin_v1',       // 当前皮肤存档键
+    audioSaveKey: 'sr_audio_v1',     // 音量设置存档键
   };
 
   const COLORS = [0x2ed3be, 0xf2ae3c];        // 0 = 青，1 = 金（饱和度提高，远处也一眼可辨）
@@ -967,9 +1192,11 @@
   scene.background = new THREE.Color(0x06070d);
   scene.fog = new THREE.Fog(0x06070d, 26, 88);   // 远处淡出，营造纵深感
 
-  const camera = new THREE.PerspectiveCamera(66, window.innerWidth / window.innerHeight, 0.1, 260);
-  // 2.5D 侧视：相机在跑道侧上方，跑道向画面纵深斜向延伸
+  const camera = new THREE.PerspectiveCamera(66, window.innerWidth / window.innerHeight, 0.1, 260);  // 2.5D 侧视：相机在跑道侧上方，跑道向画面纵深斜向延伸
   camera.position.set(12.2, 2.0, 10.2);
+
+  /* 低特效模式：帧率长期偏低时自动减少粒子数量 / 像素比（性能兼容） */
+  let lowFx = false;
 
   /* 灯光：环境光负责基础明暗，跑道与小球的颜色主要来自自发光 */
   scene.add(new THREE.AmbientLight(0x88aaff, 0.6));
@@ -1194,6 +1421,89 @@
   scene.add(wallL);
 
   /* ==========================================================
+     五之二、星空 + 空间隧道环：提供纵深与场景氛围
+     两者都随世界滚动，滚动到镜头后方后循环回远处，不会无限增长
+     ========================================================== */
+  const STAR_COUNT = 520;
+  const starZ = new Float32Array(STAR_COUNT);           // 每颗星的 z 坐标（单独保存，便于循环）
+  const starPosArr = new Float32Array(STAR_COUNT * 3);
+  const starColArr = new Float32Array(STAR_COUNT * 3);
+  const starTmpColor = new THREE.Color();
+  for (let i = 0; i < STAR_COUNT; i++) {
+    starPosArr[i * 3] = (Math.random() - 0.5) * 150;          // x：铺满视野
+    starPosArr[i * 3 + 1] = (Math.random() - 0.5) * 80;       // y
+    starZ[i] = -230 + Math.random() * 255;                     // z：从远处到镜头附近
+    starPosArr[i * 3 + 2] = starZ[i];
+    // 星色：青 / 金 / 白三种，少量金色让画面不单调
+    const r = Math.random();
+    starTmpColor.setHex(r < 0.62 ? 0xbfefff : (r < 0.86 ? 0x2ed3be : 0xf2ae3c));
+    starColArr[i * 3] = starTmpColor.r;
+    starColArr[i * 3 + 1] = starTmpColor.g;
+    starColArr[i * 3 + 2] = starTmpColor.b;
+  }
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPosArr, 3));
+  starGeo.setAttribute('color', new THREE.BufferAttribute(starColArr, 3));
+  const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({
+    map: glowTex, size: 0.62, vertexColors: true, transparent: true, opacity: 0.85,
+    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+    fog: false,   // 星空不受雾影响，保持远处可见
+  }));
+  scene.add(stars);
+
+  // 隧道环：一圈圈淡光环，制造“穿过空间隧道”的纵深感
+  const RING_COUNT = 8;
+  const RING_GAP = 27;                // 环间距
+  const tunnelRings = [];
+  const ringGeo = new THREE.TorusGeometry(7.6, 0.075, 4, 64);
+  for (let i = 0; i < RING_COUNT; i++) {
+    const mat = new THREE.MeshBasicMaterial({
+      color: i % 2 === 0 ? 0x2ed3be : 0xf2ae3c,
+      transparent: true, opacity: 0.15,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const ring = new THREE.Mesh(ringGeo, mat);
+    ring.position.set(0, 0, -18 - i * RING_GAP);
+    scene.add(ring);
+    tunnelRings.push(ring);
+  }
+
+  /** 背景层随世界滚动：星空 / 隧道环循环复用（dz = 本帧滚动的距离） */
+  function scrollBackground(dz) {
+    if (dz <= 0) return;
+    for (let i = 0; i < STAR_COUNT; i++) {
+      starZ[i] += dz;
+      if (starZ[i] > 26) starZ[i] -= 256;      // 越过镜头后回到最远处
+      starPosArr[i * 3 + 2] = starZ[i];
+    }
+    starGeo.attributes.position.needsUpdate = true;
+
+    for (let i = 0; i < tunnelRings.length; i++) {
+      const ring = tunnelRings[i];
+      ring.position.z += dz;
+      if (ring.position.z > 30) ring.position.z -= RING_GAP * RING_COUNT;
+    }
+  }
+
+  /* 阶段氛围：不同阶段雾色 / 隧道环色缓慢过渡，产生“场景变化” */
+  const STAGE_MOODS = [
+    { fog: 0x06070d, a: 0x2ed3be, b: 0xf2ae3c },   // 1 热身：青金
+    { fog: 0x05111a, a: 0x39c6ff, b: 0x2ed3be },   // 2 断裂：偏蓝
+    { fog: 0x0d0a1c, a: 0x9d7bff, b: 0x39c6ff },   // 3 加速：紫蓝
+    { fog: 0x06131a, a: 0x8ef0d8, b: 0x9d7bff },   // 4 弹跳：青紫
+    { fog: 0x140a0e, a: 0xf2ae3c, b: 0xff6a8a },   // 5 极限：金红
+  ];
+  const moodFog = new THREE.Color(STAGE_MOODS[0].fog);
+  /** 切换阶段氛围（只改目标色，逐帧插值，避免突兀） */
+  function applyStageMood(st) {
+    const m = STAGE_MOODS[Math.max(0, Math.min(STAGE_MOODS.length - 1, st - 1))];
+    moodFog.setHex(m.fog);
+    for (let i = 0; i < tunnelRings.length; i++) {
+      tunnelRings[i].material.color.setHex(i % 2 === 0 ? m.a : m.b);
+    }
+  }
+
+  /* ==========================================================
      六、小球（径向渐变精灵：柔和发光，无硬描边）
      ========================================================== */
   /** 生成球体纹理：中心实体、边缘柔和过渡 */
@@ -1259,6 +1569,18 @@
   }));
   ballSpec.scale.setScalar(0.44);
   scene.add(ballSpec);
+
+  /* --- 皮肤外壳：只加一层彩色能量壳（不影响小球本体颜色，保证颜色玩法清晰） --- */
+  const skinShell = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTex,
+    color: 0xff7a3c,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  }));
+  skinShell.scale.setScalar(4.2);
+  scene.add(skinShell);
 
   /* --- 护盾视觉：护盾生效时，小球周围环绕一圈半透明小盾牌 --- */
   /** 用 Canvas 画一张盾牌图标纹理（形状：上方平肩、下方收尖） */
@@ -1396,7 +1718,7 @@
     const spread = CFG.ballR * 0.85;
     p.life = 0.3;
     p.max = 0.3;
-    p.sp.material.color.setHex(COLORS[state.colorIdx]);
+    p.sp.material.color.setHex(skinColor());   // 拖尾颜色跟随皮肤；默认皮肤跟随小球颜色
     p.sp.position.set(
       (Math.random() - 0.5) * spread,
       state.ballY + (Math.random() - 0.5) * spread,
@@ -1428,6 +1750,79 @@
       p.sp.material.opacity = t * 0.68;
       p.sp.scale.setScalar(p.size * (0.3 + t * 0.7) * 2);
     }
+  }
+
+  /* --- 通用粒子爆发池：吃光点 / 拾取道具 / 撞击 / 加速共用，避免频繁创建对象 --- */
+  const BURST_MAX = 48;
+  const bursts = [];
+  for (let i = 0; i < BURST_MAX; i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: glowTex,
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }));
+    sp.visible = false;
+    scene.add(sp);
+    bursts.push({ sp, life: 0, max: 0.4, vx: 0, vy: 0, vz: 0, size: 0.4 });
+  }
+  let burstCursor = 0;
+
+  /** 在世界坐标 (x,y,z) 处喷出一小簇粒子 */
+  function spawnBurst(x, y, z, colorHex, count, power, sizeBase) {
+    // 性能较弱时自动减少粒子数量
+    const n = lowFx ? Math.ceil(count * 0.5) : count;
+    for (let i = 0; i < n; i++) {
+      const p = bursts[burstCursor];
+      burstCursor = (burstCursor + 1) % BURST_MAX;
+      const a = Math.random() * Math.PI * 2;
+      const b = (Math.random() - 0.5) * Math.PI;
+      const s = power * (0.5 + Math.random() * 0.8);
+      p.vx = Math.cos(a) * Math.cos(b) * s;
+      p.vy = Math.sin(b) * s;
+      p.vz = Math.sin(a) * Math.cos(b) * s;
+      p.life = 0.32 + Math.random() * 0.28;
+      p.max = p.life;
+      p.size = sizeBase * (0.6 + Math.random() * 0.8);
+      p.sp.material.color.setHex(colorHex);
+      p.sp.material.opacity = 0.95;
+      p.sp.scale.setScalar(p.size * 2);
+      p.sp.position.set(x, y, z);
+      p.sp.visible = true;
+    }
+  }
+
+  /** 每帧推进爆发粒子（扩散 + 衰减） */
+  function updateBursts(dt) {
+    for (let i = 0; i < bursts.length; i++) {
+      const p = bursts[i];
+      if (p.life <= 0) continue;
+      p.life -= dt;
+      if (p.life <= 0) { p.sp.visible = false; continue; }
+      const t = p.life / p.max;            // 1 → 0
+      p.sp.position.x += p.vx * dt;
+      p.sp.position.y += p.vy * dt;
+      p.sp.position.z += p.vz * dt;
+      p.vx *= 0.94; p.vy *= 0.94; p.vz *= 0.94;
+      p.sp.material.opacity = t * 0.9;
+      p.sp.scale.setScalar(p.size * (0.5 + t) * 2);
+    }
+  }
+
+  /* --- 分数飘字：用 DOM 实现，不占用 WebGL 资源 --- */
+  const floatLayer = document.getElementById('floatLayer');
+  function floatText(text, color) {
+    const el = document.createElement('div');
+    el.className = 'float-pt';
+    el.textContent = text;
+    if (color) el.style.color = color;
+    // 落在小球附近（略偏左下），不遮挡前方障碍
+    el.style.left = (44 + Math.random() * 10) + '%';
+    el.style.top = (54 + Math.random() * 6) + '%';
+    floatLayer.appendChild(el);
+    setTimeout(() => el.remove(), 900);
   }
 
   /* --- 复活粒子：复活瞬间由四周粒子聚拢、重新拼出小球 --- */
@@ -1787,7 +2182,10 @@
     if (s.pickup && !s.pickup.taken) {
       const pu = s.pickup;
       const laneY = pu.lane === 0 ? -BALL_REST_Y : BALL_REST_Y;
-      const col = pu.type === 'shield' ? 0x7ec8ff : pu.type === 'life' ? 0xff7abf : 0xffd27a;
+      const col = pu.type === 'shield' ? 0x7ec8ff
+        : pu.type === 'life' ? 0xff7abf
+        : pu.type === 'slow' ? 0xb9a2ff
+        : 0xffd27a;
       s.pickupCore.material.color.setHex(col);
       s.pickupRing.material.color.setHex(col);
       s.pickupCore.visible = true;
@@ -1862,10 +2260,11 @@
       else if (prev.padLane >= 0 && prev.padType === 'jump') forcedLane = 1 - prev.padLane;
     }
 
-    // 强制换层元素（障碍墙 / 断裂口）之间至少间隔 forceGapZ 米：
-    // 否则连续几段都要切线，高速下会出现「来不及反应」的必死连击
+    // 强制换层元素（障碍墙 / 断裂口）之间至少间隔一段随速度增长的缓冲：
+    // 速度越快，留给玩家的反应距离越长；避免高速下连续切线造成“必死连击”
     const center = (far + near) / 2;
-    const forceGapOk = (state.lastForceZ - center) >= CFG.forceGapZ;
+    const dynamicGap = Math.max(CFG.forceGapZ, state.speed * CFG.forceGapSpeedFactor);
+    const forceGapOk = (state.lastForceZ - center) >= dynamicGap;
 
     // 障碍墙：封锁一层，但不得封玩家被上一段逼到的层
     if (armed && forceGapOk && Math.random() < 0.42) {
@@ -1985,6 +2384,7 @@
     }
     state.spawnFarZ += dz;
     wallTex.offset.x += dz * 0.235;   // 网格与世界同步滚动
+    scrollBackground(dz);             // 星空 / 隧道环同步滚动
     spawnAhead();
     cullSegments();
   }
@@ -2025,11 +2425,13 @@
     lives: 0,                   // 本局剩余复活次数（任务 / 道具增加，上限 CFG.maxLives）
     shieldUntil: 0,             // 护盾到期时间戳（ms）。护盾期间撞墙/缺口/颜色不符都会被抵消
     magnetUntil: 0,             // 磁吸金球到期时间戳。生效时上下两层的金色光点都会被吸向小球
+    slowUntil: 0,               // 减速道具到期时间戳。生效时世界推进速度降低
     invulnUntil: 0,             // 极短无敌帧截止时间戳：护盾吸收/复活后，让卡在身上的障碍直接穿过去
     revivePhase: '',            // 复活流程阶段：'' 无 | 'slow' 跑道减速滑行 | 'gather' 粒子凝聚
     reviveSlowAt: 0,            // 减速滑行结束时间戳
     reviveGatherAt: 0,          // 粒子凝聚结束时间戳
     reviveTravel: 0,            // 滑行阶段已经推进的距离（用于按帧差分滚动）
+    pausedAt: 0,                // 进入暂停时的时间戳（恢复时用于顺延各类计时器）
 
     /* --- 结算 / 手感 --- */
     prevBest: 0,            // 本局开始前的个人最高（用于判定「新纪录」与「超过上一局」）
@@ -2037,6 +2439,11 @@
     inputLockUntil: 0,      // 输入屏蔽截止时间戳（重开后的短暂免疫）
     milestonesHit: new Set(), // 本局已触发的里程碑，避免重复弹
     beatPrev: false,        // 本局是否已提示过「超过上一局」
+
+    /* --- 本局统计（结算页展示 / 成就判定） --- */
+    flips: 0,               // 本局成功翻转重力的次数
+    runTime: 0,             // 本局净存活时间（秒，复活演出不计入）
+    maxSpeedSeen: 0,        // 本局达到过的最高速度（单位/秒）
 
     /* --- 模式 --- */
     gameMode: 'endless',    // endless 无尽 / campaign 闯关
@@ -2051,9 +2458,31 @@
 
   /* ==========================================================
      九、音效（WebAudio 合成，无需音频文件）
+     新增：BGM / 音效 / 总静音 三路独立控制，设置持久化
      ========================================================== */
+  const AUDIO_DEFAULT = { bgm: 0.40, sfx: 0.85, muted: false };
+  /** 读取音量设置（存储损坏时回落到默认值） */
+  function loadAudioCfg() {
+    try {
+      const raw = localStorage.getItem(CFG.audioSaveKey);
+      const d = raw ? JSON.parse(raw) : null;
+      return d ? { ...AUDIO_DEFAULT, ...d } : { ...AUDIO_DEFAULT };
+    } catch (e) { return { ...AUDIO_DEFAULT }; }
+  }
+  let audioCfg = loadAudioCfg();
+  let muted = !!audioCfg.muted;
+
   let actx = null;
-  let muted = false;
+  let masterGain = null;    // 总增益（静音开关）
+  let sfxGain = null;       // 音效增益（音量滑杆）
+  let bgmGain = null;       // 背景音乐增益（音量滑杆 + 播放开关）
+  let bgmActive = false;    // 背景音乐是否应该出声（仅游戏进行中为 true）
+  let bgmBuilt = false;     // 背景音乐节点是否已经创建
+  let bgmPreviewTimer = 0;  // 设置页试听 BGM 的定时器
+
+  function saveAudioCfg() {
+    try { localStorage.setItem(CFG.audioSaveKey, JSON.stringify(audioCfg)); } catch (e) {}
+  }
 
   function audioInit() {
     if (!actx) {
@@ -2062,13 +2491,75 @@
       } catch (e) {
         actx = null;
       }
+      if (actx) {
+        // 音频链路：音效 / BGM → 总增益 → 扬声器
+        masterGain = actx.createGain();
+        masterGain.connect(actx.destination);
+        sfxGain = actx.createGain();
+        sfxGain.connect(masterGain);
+        bgmGain = actx.createGain();
+        bgmGain.gain.value = 0;
+        bgmGain.connect(masterGain);
+        buildBgm();              // 创建背景音乐节点（此时增益为 0，游戏开始后才淡入）
+        applyAudioSettings();
+      }
     }
     if (actx && actx.state === 'suspended') actx.resume();
   }
 
-  /** 播放一个短音（可带频率滑动） */
+  /** 应用总静音 / 音效音量 / BGM 音量（平滑过渡，避免爆音） */
+  function applyAudioSettings() {
+    muted = !!audioCfg.muted;
+    if (!actx || !masterGain) return;
+    const t = actx.currentTime;
+    masterGain.gain.setTargetAtTime(muted ? 0 : 1, t, 0.02);
+    sfxGain.gain.setTargetAtTime(Math.max(0, Math.min(1, audioCfg.sfx)), t, 0.02);
+    if (!bgmActive) bgmGain.gain.setTargetAtTime(0, t, 0.08);
+    else bgmGain.gain.setTargetAtTime(audioCfg.bgm * 0.22, t, 0.15);
+  }
+
+  /** 背景音乐：极简合成氛围垫，音量很低，不抢游戏音效 */
+  function buildBgm() {
+    if (!actx || bgmBuilt) return;
+    bgmBuilt = true;
+    // 三个低频正弦叠加成柔和的和声垫
+    const freqs = [55, 82.5, 110.2];
+    const filters = [];
+    for (const f of freqs) {
+      const osc = actx.createOscillator();
+      const g = actx.createGain();
+      const flt = actx.createBiquadFilter();
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      flt.type = 'lowpass';
+      flt.frequency.value = 420;
+      g.gain.value = 0.30;
+      osc.connect(flt).connect(g).connect(bgmGain);
+      osc.start();
+      filters.push(flt);
+    }
+    // 缓慢起伏的滤波扫频，让垫音有呼吸感（只调制滤波频率，不调制总音量，
+    // 避免静音时仍因 LFO 叠加而漏出声音）
+    const lfo = actx.createOscillator();
+    const lfoGain = actx.createGain();
+    lfo.frequency.value = 0.06;
+    lfoGain.gain.value = 60;
+    lfo.connect(lfoGain);
+    for (const flt of filters) lfoGain.connect(flt.frequency);
+    lfo.start();
+  }
+
+  /** 游戏进行中开启 BGM，暂停 / 回到主页时淡出 */
+  function setBgmActive(on) {
+    bgmActive = !!on;
+    if (!actx || !bgmGain) return;
+    const t = actx.currentTime;
+    bgmGain.gain.setTargetAtTime(bgmActive ? audioCfg.bgm * 0.22 : 0, t, bgmActive ? 0.4 : 0.12);
+  }
+
+  /** 播放一个短音（可带频率滑动）；统一走 sfxGain，受音效音量与总静音控制 */
   function tone(freq, dur, type, vol, endFreq) {
-    if (!actx || muted) return;
+    if (!actx || !sfxGain) return;
     const t = actx.currentTime;
     const osc = actx.createOscillator();
     const gain = actx.createGain();
@@ -2078,7 +2569,7 @@
     gain.gain.setValueAtTime(0.0001, t);
     gain.gain.linearRampToValueAtTime(vol, t + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    osc.connect(gain).connect(actx.destination);
+    osc.connect(gain).connect(sfxGain);
     osc.start(t);
     osc.stop(t + dur + 0.03);
   }
@@ -2098,14 +2589,25 @@
   }
   // 拾取道具：清脆上扬，不同道具用不同起音
   function sfxPickup(type) {
-    const base = type === 'shield' ? 520 : type === 'life' ? 760 : 620;
+    const base = type === 'shield' ? 520 : type === 'life' ? 760 : type === 'slow' ? 430 : 620;
     tone(base, 0.09, 'triangle', 0.06, base * 1.8);
     setTimeout(() => tone(base * 1.5, 0.11, 'triangle', 0.05, base * 2.4), 60);
+  }
+  // 进入新阶段：两音上行
+  function sfxStage() {
+    tone(392, 0.14, 'triangle', 0.045, 523);
+    setTimeout(() => tone(523, 0.18, 'triangle', 0.045, 784), 130);
+  }
+  // 成就解锁：明亮三连音
+  function sfxAchieve() {
+    tone(880, 0.12, 'triangle', 0.05, 1175);
+    setTimeout(() => tone(1175, 0.12, 'triangle', 0.05, 1568), 110);
+    setTimeout(() => tone(1568, 0.22, 'triangle', 0.045, 2093), 220);
   }
 
   /** 撞击音：低频下坠 + 噪声爆裂 */
   function sfxCrash() {
-    if (!actx || muted) return;
+    if (!actx || !sfxGain) return;
     tone(240, 0.5, 'sawtooth', 0.07, 38);
 
     const len = Math.floor(actx.sampleRate * 0.4);
@@ -2121,7 +2623,7 @@
     flt.frequency.value = 1500;
     const gain = actx.createGain();
     gain.gain.value = 0.16;
-    src.connect(flt).connect(gain).connect(actx.destination);
+    src.connect(flt).connect(gain).connect(sfxGain);
     src.start();
   }
 
@@ -2166,6 +2668,50 @@
   // 结算页「本局解锁」区块（勋章 / 任务统一列表）
   const overUnlocks = $('overUnlocks');
   const ouList = $('ouList');
+
+  /* --- 新增 UI 引用：暂停 / 结算明细 / 主页等级 / 皮肤 / 每日任务 / 设置 --- */
+  const btnPause = $('btnPause');
+  const pauseScreen = $('pauseScreen');
+  const btnResume = $('btnResume');
+  const btnPauseRestart = $('btnPauseRestart');
+  const btnPauseHome = $('btnPauseHome');
+
+  const osSpeed = $('osSpeed');
+  const osCombo = $('osCombo');
+  const osOrbs = $('osOrbs');
+  const osFlip = $('osFlip');
+  const osPickup = $('osPickup');
+  const osTime = $('osTime');
+  const btnOverBoard = $('btnOverBoard');
+  const buffSlow = $('buffSlow');
+  const slowRemain = $('slowRemain');
+
+  const homeLv = $('homeLv');
+  const homeXpFill = $('homeXpFill');
+  const homeXpTxt = $('homeXpTxt');
+  const homeCoins = $('homeCoins');
+  const homeShards = $('homeShards');
+
+  const skinScreen = $('skinScreen');
+  const skinList = $('skinList');
+  const skinBack = $('skinBack');
+  const openSkins = $('openSkins');
+
+  const dailyScreen = $('dailyScreen');
+  const dailyList = $('dailyList');
+  const dailyBack = $('dailyBack');
+  const openDaily = $('openDaily');
+  const dailyNote = $('dailyNote');
+
+  const settingsScreen = $('settingsScreen');
+  const settingsBack = $('settingsBack');
+  const openSettings = $('openSettings');
+  const volBgm = $('volBgm');
+  const volSfx = $('volSfx');
+  const volBgmVal = $('volBgmVal');
+  const volSfxVal = $('volSfxVal');
+  const btnMute = $('btnMute');
+  const speedFx = $('speedFx');
 
   bestVal.textContent = String(state.best).padStart(5, '0');
 
@@ -2429,7 +2975,8 @@
   }
 
   /* 页面切换：只显示一个覆盖层，传 null 表示全部隐藏（进入游戏） */
-  const SCREENS = ['nameScreen', 'startScreen', 'levelScreen', 'boardScreen', 'medalScreen', 'overScreen', 'clearScreen'];
+  const SCREENS = ['nameScreen', 'startScreen', 'levelScreen', 'boardScreen', 'medalScreen',
+    'skinScreen', 'dailyScreen', 'settingsScreen', 'overScreen', 'clearScreen', 'pauseScreen'];
   function showScreen(id) {
     for (const s of SCREENS) {
       document.getElementById(s).classList.toggle('hide', s !== id);
@@ -2439,15 +2986,25 @@
     document.getElementById('touch').classList.toggle('off', !!id);
   }
 
-  /** 渲染主页信息（昵称、通关数、个人最佳） */
+  /** 渲染主页信息（昵称、通关数、个人最佳、等级 / 金币 / 碎片） */
   function renderHome() {
     helloName.textContent = playerName || '玩家';
     const p = loadProgress();
     const cleared = Object.keys(p.stars || {}).length;
     campaignMeta.textContent = '已通关 ' + cleared + ' / ' + LEVELS.length;
     endlessMeta.textContent = '个人最佳 ' + playerBest() + ' M';
+
+    // 等级 / 经验 / 货币
+    const prog = loadProgressData();
+    const lv = levelInfo(prog);
+    homeLv.textContent = String(lv.lv);
+    homeXpFill.style.width = lv.pct.toFixed(1) + '%';
+    homeXpTxt.textContent = lv.cur + ' / ' + lv.need + ' EXP';
+    homeCoins.textContent = String(prog.coins || 0);
+    homeShards.textContent = String(prog.shards || 0);
+
     // 成就入口顺带显示解锁进度，方便一眼看到还剩几个
-    const got = Object.keys(loadProgressData().medals).length;
+    const got = Object.keys(prog.medals).length;
     openMedals.textContent = '成 就 ' + got + '/' + MEDALS.length;
   }
 
@@ -2781,6 +3338,15 @@
     state.targetY = state.gravity * BALL_REST_Y;
     state.squash = -0.22;    // 起跳瞬间轻微拉长，落地再压扁
     state.squashVel = -2.5;
+    // 本局统计 + 每日任务：翻转次数
+    state.flips++;
+    dailyAdd('d_flip', 1);
+    saveDaily();               // 离散事件立即落盘，刷新页面不丢进度
+    // 视觉反馈：画面轻微滚转 + 球边粒子爆开
+    container.classList.remove('flip');
+    void container.offsetWidth;
+    container.classList.add('flip');
+    spawnBurst(0, state.ballY, 0.2, COLORS[state.colorIdx], 7, 2.6, 0.24);
     sfxFlip();
   }
 
@@ -2790,6 +3356,10 @@
     if (performance.now() < state.inputLockUntil) return;   // 重开后的短暂输入屏蔽
     state.colorIdx = 1 - state.colorIdx;
     applyColor(state.colorIdx);
+    // 换色反馈：一小圈同色粒子 + 轻微闪光（不改变小球本体的即时颜色，保证判定清晰）
+    spawnBurst(0, state.ballY, 0.3, COLORS[state.colorIdx], 6, 2.2, 0.2);
+    flashEl.classList.add('soft');
+    setTimeout(() => flashEl.classList.remove('soft'), 120);
     sfxColor();
   }
 
@@ -2831,6 +3401,9 @@
     const before = comboMultiplier();
     state.combo++;
     if (state.combo > state.comboMax) state.comboMax = state.combo;
+    // 每日任务：连击峰值
+    dailyMax('d_combo', state.combo);
+    saveDaily();
     refreshComboUI();
 
     if (comboMultiplier() > before) {
@@ -2849,35 +3422,53 @@
   /** 吃到光点：只累计光点数（用于星级），成绩完全由里程决定 */
   function pickOrb() {
     state.orbs++;
+    // 每日任务：收集光点
+    dailyAdd('d_orb', 1);
+    saveDaily();               // 光点数量是离散事件，立即保存
 
     comboEl.classList.remove('pop');
     void comboEl.offsetWidth;     // 强制重排以重启动画
     comboEl.classList.add('pop');
 
+    // 收集反馈：金色粒子爆开 + 分数飘字
+    spawnBurst(0, state.ballY, 0.6, 0xffd48a, 8, 3.0, 0.26);
+    floatText('+1');
+
     tone(880 + Math.min(state.orbs, 12) * 55, 0.09, 'triangle', 0.045, 1300);
   }
 
-  /** 拾取道具：三种效果互斥叠加，护盾和磁吸可以并存，复活球叠加 lives */
+  /** 拾取道具：护盾 / 磁吸 / 减速可并存，复活球叠加 lives */
   function applyPickup(type) {
     const now = performance.now();
     sfxPickup(type);
-    // 本局拾取计数：任务 / 勋章统计用
+    // 本局拾取计数：任务 / 勋章 / 结算统计用
     sessionPickupCount++;
 
     let label = '';
+    let burstColor = 0x7ec8ff;
     if (type === 'shield') {
       state.shieldUntil = now + CFG.shieldDurMs;
       label = '🛡 护盾激活！';
+      burstColor = 0x7ec8ff;
     } else if (type === 'magnet') {
       state.magnetUntil = now + CFG.magnetDurMs;
       label = '🧲 磁吸激活！';
+      burstColor = 0xffd27a;
+    } else if (type === 'slow') {
+      state.slowUntil = now + CFG.slowDurMs;
+      label = '⏱ 时间减速！';
+      burstColor = 0xb9a2ff;
     } else if (type === 'life') {
       // 复活球：加上限到 lives，上限 CFG.maxLives（防无限续命）
       state.lives = Math.min(CFG.maxLives, state.lives + CFG.pickupLifeBonus);
       label = '♥ 获得复活机会！';
+      burstColor = 0xff7abf;
       tone(720, 0.12, 'triangle', 0.05, 1080);
       setTimeout(() => tone(1080, 0.14, 'triangle', 0.05, 1440), 85);
     }
+
+    // 拾取反馈：道具颜色粒子爆开
+    spawnBurst(0, state.ballY + 0.2, 0.6, burstColor, 12, 3.4, 0.3);
 
     // 道具拾取 HUD 提示（约 1.2 秒自动消失）
     pickupTxt.textContent = label;
@@ -2898,13 +3489,17 @@
     const now = performance.now();
     const shieldLeft = Math.max(0, Math.ceil((state.shieldUntil - now) / 1000));
     const magnetLeft = Math.max(0, Math.ceil((state.magnetUntil - now) / 1000));
+    const slowLeft = Math.max(0, Math.ceil((state.slowUntil - now) / 1000));
     const hasShield = shieldLeft > 0;
     const hasMagnet = magnetLeft > 0;
-    buffsBar.hidden = !hasShield && !hasMagnet;
+    const hasSlow = slowLeft > 0;
+    buffsBar.hidden = !hasShield && !hasMagnet && !hasSlow;
     buffShield.hidden = !hasShield;
     buffMagnet.hidden = !hasMagnet;
+    buffSlow.hidden = !hasSlow;
     shieldRemain.textContent = String(shieldLeft);
     magnetRemain.textContent = String(magnetLeft);
+    slowRemain.textContent = String(slowLeft);
   }
 
   /* ==========================================================
@@ -2915,12 +3510,18 @@
   // 勋章定义：id / 显示名 / emoji / 解锁条件描述 / 触发条件函数（根据本局数据）
   // check 额外接收 PROGRESS 存档作为第三参，用于"累计类"勋章
   const MEDALS = [
-    { id: 'm_100',   name: '百米起步',   emoji: '🏃',  desc: '一局内分数达到 100',   check: (s, cur) => cur >= 100    },
-    { id: 'm_500',   name: '半程冲刺',   emoji: '💨',  desc: '一局内分数达到 500',   check: (s, cur) => cur >= 500    },
-    { id: 'm_1000',  name: '千分达成',   emoji: '🏅',  desc: '一局内分数达到 1000',  check: (s, cur) => cur >= 1000   },
-    { id: 'm_2000',  name: '极速狂飙',   emoji: '🏆',  desc: '一局内分数达到 2000',  check: (s, cur) => cur >= 2000   },
-    { id: 'm_combo', name: '连击大师',   emoji: '🔥',  desc: '单局最高连击达到 20',  check: (s, cur) => s.comboMax >= 20 },
-    { id: 'm_record',name: '新纪录猎人', emoji: '🎯',  desc: '达成累计 5 次新纪录',  check: (s, cur, p) => p.newRecordCount >= 5 },
+    { id: 'm_100',     name: '百米起步',   emoji: '🏃',  desc: '一局内分数达到 100',     check: (s, cur) => cur >= 100    },
+    { id: 'm_500',     name: '半程冲刺',   emoji: '💨',  desc: '一局内分数达到 500',     check: (s, cur) => cur >= 500    },
+    { id: 'm_1000',    name: '千分达成',   emoji: '🏅',  desc: '一局内分数达到 1000',    check: (s, cur) => cur >= 1000   },
+    { id: 'm_2000',    name: '极速狂飙',   emoji: '🏆',  desc: '一局内分数达到 2000',    check: (s, cur) => cur >= 2000   },
+    { id: 'm_combo',   name: '连击大师',   emoji: '🔥',  desc: '单局最高连击达到 20',    check: (s) => s.comboMax >= 20   },
+    { id: 'm_combo50', name: '连击狂人',   emoji: '⚡',  desc: '单局最高连击达到 50',    check: (s) => s.comboMax >= 50   },
+    { id: 'm_record',  name: '新纪录猎人', emoji: '🎯',  desc: '达成累计 5 次新纪录',    check: (s, cur, p) => p.newRecordCount >= 5 },
+    { id: 'm_flip30',  name: '翻转自如',   emoji: '🔁',  desc: '单局翻转重力 30 次',     check: (s) => s.flips >= 30      },
+    { id: 'm_dodge10', name: '十连躲避',   emoji: '🛡',  desc: '连续通过 10 个障碍',     check: (s) => s.comboMax >= 10   },
+    { id: 'm_orbs50',  name: '光点猎手',   emoji: '✨',  desc: '单局收集 50 个光点',     check: (s) => s.orbs >= 50       },
+    { id: 'm_endless', name: '无尽行者',   emoji: '🌌',  desc: '无尽模式分数达到 1000',  check: (s, cur) => s.gameMode === 'endless' && cur >= 1000 },
+    { id: 'm_alllv',   name: '全关通关',   emoji: '👑',  desc: '解锁全部闯关关卡',       check: () => Object.keys(loadProgress().stars || {}).length >= LEVELS.length },
   ];
 
   // 任务：每次新赛季或完成后刷新；奖励给 lives 上限 +1 或"本局一开始多一个护盾"
@@ -2938,8 +3539,11 @@
 
   /** 从 localStorage 读勋章 / 任务进度；没有就返回空对象 */
   function loadProgressData() {
-    // 默认值：初始复活 3 次（与 CFG.startLives 保持一致）
-    const base = { medals: {}, newRecordCount: 0, livesMax: CFG.startLives, shieldStart: 0, tasks: {} };
+    // 默认值：初始复活 3 次 + 成长数据（金币 / 碎片 / 经验 / 累计里程）
+    const base = {
+      medals: {}, newRecordCount: 0, livesMax: CFG.startLives, shieldStart: 0, tasks: {},
+      coins: 0, shards: 0, xp: 0, totalDistance: 0, bestCombo: 0, skins: {},
+    };
     let data;
     try {
       const raw = localStorage.getItem(CFG.taskProgressSaveKey);
@@ -2949,6 +3553,7 @@
     }
     // 老存档里 livesMax 可能是 1/2：统一拉到新的初始 3 次，同时不超过上限 5
     data.livesMax = Math.max(CFG.startLives, Math.min(CFG.maxLives, data.livesMax || CFG.startLives));
+    data.skins = data.skins || {};
     return data;
   }
   function saveProgressData(d) {
@@ -2960,6 +3565,229 @@
   // 本局拾取的道具数（任务统计用，不在 state 里，避免污染全局）
   let sessionPickupCount = 0;
 
+  /* ==========================================================
+     皮肤系统：只改变外观（外壳 / 拖尾 / 粒子颜色），不影响任何数值
+     解锁条件来自累计里程、最高连击、成就数量，或用碎片兑换
+     ========================================================== */
+  const SKINS = [
+    { id: 'base',  name: '青金核心', desc: '经典外观 · 默认拥有', accent: null },
+    { id: 'flame', name: '火焰拖尾', desc: '累计跑满 2000 米解锁', accent: 0xff7a3c, req: (p) => (p.totalDistance || 0) >= 2000 },
+    { id: 'bolt',  name: '闪电拖尾', desc: '最高连击达到 30 解锁', accent: 0x8fe3ff, req: (p) => (p.bestCombo || 0) >= 30 },
+    { id: 'core',  name: '能量核心', desc: '解锁 4 个成就后可用', accent: 0xfff0b0, req: (p) => Object.keys(p.medals || {}).length >= 4 },
+    { id: 'prism', name: '棱镜光环', desc: '消耗 30 皮肤碎片解锁', accent: null, costShards: 30 },
+  ];
+  let currentSkin = localStorage.getItem(CFG.skinSaveKey) || 'base';
+
+  /** 取皮肤配置（存档里的 id 失效时回落到默认皮肤） */
+  function getSkin(id) {
+    return SKINS.find((s) => s.id === id) || SKINS[0];
+  }
+
+  /** 皮肤是否已解锁（碎片皮肤看是否已购买 / 碎片是否足够） */
+  function skinUnlocked(skin) {
+    const p = loadProgressData();
+    if (skin.costShards) {
+      if (p.skins && p.skins[skin.id]) return true;
+      return (p.shards || 0) >= skin.costShards;
+    }
+    return !skin.req || skin.req(p);
+  }
+
+  /** 当前皮肤强调色：base 跟随小球颜色，prism 随时间渐变色相 */
+  function skinColor() {
+    const sk = getSkin(currentSkin);
+    if (sk.id === 'prism') {
+      const c = new THREE.Color();
+      c.setHSL((performance.now() * 0.00025) % 1, 0.85, 0.62);
+      return c.getHex();
+    }
+    return sk.accent == null ? COLORS[state.colorIdx] : sk.accent;
+  }
+
+  /** 装备皮肤：碎片皮肤首次装备时扣除碎片并永久记录 */
+  function equipSkin(id) {
+    const sk = getSkin(id);
+    PROGRESS = loadProgressData();
+    if (sk.costShards && !(PROGRESS.skins && PROGRESS.skins[sk.id])) {
+      if ((PROGRESS.shards || 0) < sk.costShards) return;
+      PROGRESS.shards -= sk.costShards;
+      PROGRESS.skins = PROGRESS.skins || {};
+      PROGRESS.skins[sk.id] = true;
+      saveProgressData(PROGRESS);
+      sfxAchieve();
+    }
+    if (!skinUnlocked(sk)) return;
+    currentSkin = sk.id;
+    localStorage.setItem(CFG.skinSaveKey, sk.id);
+    sfxPickup('shield');
+    renderSkins();
+    renderHome();
+  }
+
+  /** 渲染皮肤列表 */
+  function renderSkins() {
+    if (!skinList) return;
+    skinList.innerHTML = '';
+    const p = loadProgressData();
+    for (const sk of SKINS) {
+      const owned = skinUnlocked(sk);
+      const isCur = currentSkin === sk.id;
+      const row = document.createElement('div');
+      row.className = 'skin-row' + (isCur ? ' on' : '') + (owned ? '' : ' locked');
+      // 圆点预览色：base 用青色，prism 用彩色渐变
+      const dotColor = sk.id === 'base' ? '#2ed3be'
+        : sk.id === 'prism' ? 'linear-gradient(135deg,#ff7a3c,#8fe3ff,#ffd27a)'
+        : '#' + (sk.accent || 0x2ed3be).toString(16).padStart(6, '0');
+      const dotStyle = sk.id === 'prism'
+        ? 'background:' + dotColor
+        : '--dot:' + dotColor;
+      // 状态文案：使用中 / 可装备 / 未解锁
+      let stateTxt = isCur ? '使用中' : (owned ? '装 备' : '未解锁');
+      if (sk.costShards && !(p.skins && p.skins[sk.id]) && (p.shards || 0) >= sk.costShards) {
+        stateTxt = '兑换 30◆';
+      }
+      row.innerHTML =
+        '<div class="skin-dot" style="' + dotStyle + '"></div>' +
+        '<div class="skin-main"><div class="skin-name">' + sk.name + '</div>' +
+        '<div class="skin-desc">' + sk.desc + '</div></div>' +
+        '<div class="skin-act"><button class="btn ' + (isCur ? 'ghost' : 'primary') + '" type="button" ' +
+        (isCur || !owned ? 'disabled' : '') + ' data-skin="' + sk.id + '">' + stateTxt + '</button></div>';
+      skinList.appendChild(row);
+    }
+    // 事件委托：避免每次渲染重复绑定
+    if (!skinList._bound) {
+      skinList._bound = true;
+      skinList.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-skin]');
+        if (btn) equipSkin(btn.dataset.skin);
+      });
+    }
+  }
+
+  /* ==========================================================
+     每日任务：按本地日期归档，进度实时累计并节流写盘
+     ========================================================== */
+  const DAILY_TASKS = [
+    { id: 'd_dist',    name: '累计跑完 1000 米',      goal: 1000, unit: 'M',  coins: 80,  shards: 2 },
+    { id: 'd_flip',    name: '成功翻转重力 30 次',    goal: 30,   unit: '次', coins: 60,  shards: 1 },
+    { id: 'd_orb',     name: '收集 50 个光点',        goal: 50,   unit: '个', coins: 70,  shards: 2 },
+    { id: 'd_combo',   name: '达到 20 连击',          goal: 20,   unit: '连', coins: 60,  shards: 1 },
+    { id: 'd_survive', name: '无尽模式存活 2 分钟',   goal: 120,  unit: 's',  coins: 100, shards: 3 },
+  ];
+
+  /** 本地日期字符串（YYYY-M-D），用于跨天重置 */
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  }
+
+  /** 读取每日任务存档；日期变化时自动清空重来 */
+  function loadDaily() {
+    const today = todayKey();
+    try {
+      const raw = localStorage.getItem(CFG.dailySaveKey);
+      const d = raw ? JSON.parse(raw) : null;
+      if (!d || d.date !== today) return { date: today, prog: {}, claimed: {} };
+      return { date: today, prog: d.prog || {}, claimed: d.claimed || {} };
+    } catch (e) {
+      return { date: today, prog: {}, claimed: {} };
+    }
+  }
+
+  let DAILY = loadDaily();
+  let dailyDirty = false;
+  let dailySaveAt = 0;
+
+  function saveDaily() {
+    try { localStorage.setItem(CFG.dailySaveKey, JSON.stringify(DAILY)); } catch (e) {}
+    dailyDirty = false;
+    dailySaveAt = performance.now();
+  }
+
+  /** 页面长时间开着跨天时，重新拉取当天任务 */
+  function ensureDailyFresh() {
+    if (DAILY.date !== todayKey()) { DAILY = loadDaily(); dailyDirty = false; }
+  }
+
+  /** 累加任务进度 */
+  function dailyAdd(id, amount) {
+    if (!amount) return;
+    DAILY.prog[id] = (DAILY.prog[id] || 0) + amount;
+    dailyDirty = true;
+  }
+  /** 取最大值（连击 / 存活时长这类“峰值”任务） */
+  function dailyMax(id, val) {
+    if (val <= (DAILY.prog[id] || 0)) return;
+    DAILY.prog[id] = val;
+    dailyDirty = true;
+  }
+
+  /** 每帧调用：节流保存，避免频繁写 localStorage */
+  function dailyTick() {
+    if (dailyDirty && performance.now() - dailySaveAt > 1600) saveDaily();
+  }
+
+  /** 领取每日任务奖励 */
+  function claimDaily(id) {
+    const t = DAILY_TASKS.find((x) => x.id === id);
+    if (!t) return;
+    if (DAILY.claimed[id]) return;
+    if ((DAILY.prog[id] || 0) < t.goal) return;
+    DAILY.claimed[id] = true;
+    saveDaily();
+    PROGRESS = loadProgressData();
+    PROGRESS.coins = (PROGRESS.coins || 0) + t.coins;
+    PROGRESS.shards = (PROGRESS.shards || 0) + t.shards;
+    saveProgressData(PROGRESS);
+    sfxAchieve();
+    renderDaily();
+    renderHome();
+  }
+
+  /** 渲染每日任务列表 */
+  function renderDaily() {
+    if (!dailyList) return;
+    ensureDailyFresh();
+    dailyList.innerHTML = '';
+    let doneCount = 0;
+    for (const t of DAILY_TASKS) {
+      const val = Math.min(t.goal, DAILY.prog[t.id] || 0);
+      const done = val >= t.goal;
+      const claimed = !!DAILY.claimed[t.id];
+      if (claimed) doneCount++;
+      const pct = Math.min(100, (val / t.goal) * 100);
+      const row = document.createElement('div');
+      row.className = 'daily-row';
+      row.innerHTML =
+        '<div class="daily-main">' +
+          '<div class="daily-name">' + t.name + '</div>' +
+          '<div class="daily-bar"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
+          '<div class="daily-prog">' + Math.floor(val) + ' / ' + t.goal + ' ' + t.unit + '</div>' +
+          '<div class="daily-reward">奖励 金币 ' + t.coins + ' · 碎片 ' + t.shards + '</div>' +
+        '</div>' +
+        '<div class="skin-act"><button class="btn ' + (done && !claimed ? 'primary' : 'ghost') + '" type="button" ' +
+        (done && !claimed ? '' : 'disabled') + ' data-daily="' + t.id + '">' +
+        (claimed ? '已领取' : (done ? '领 取' : '进行中')) + '</button></div>';
+      dailyList.appendChild(row);
+    }
+    if (dailyNote) dailyNote.textContent = '每天 0 点刷新 · 已完成 ' + doneCount + ' / ' + DAILY_TASKS.length;
+    if (!dailyList._bound) {
+      dailyList._bound = true;
+      dailyList.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-daily]');
+        if (btn) claimDaily(btn.dataset.daily);
+      });
+    }
+  }
+
+  /** 等级计算：每 500 经验一级（成长曲线简单直观） */
+  const XP_PER_LEVEL = 500;
+  function levelInfo(p) {
+    const xp = Math.max(0, p.xp || 0);
+    const lv = Math.floor(xp / XP_PER_LEVEL) + 1;
+    return { lv, cur: xp % XP_PER_LEVEL, need: XP_PER_LEVEL, pct: ((xp % XP_PER_LEVEL) / XP_PER_LEVEL) * 100 };
+  }
+
   /**
    * 结算时检查勋章 + 任务：
    * 返回本局新解锁的条目数组，由结算页的「本局解锁」区块统一排版展示（不再弹多条 toast 互相覆盖）
@@ -2968,6 +3796,14 @@
     PROGRESS = loadProgressData();
     // 新纪录计数
     if (isNewRecord) PROGRESS.newRecordCount++;
+
+    // 成长数据：累计里程 / 最高连击 / 金币 / 经验（用于等级与皮肤解锁）
+    const lvBefore = levelInfo(PROGRESS).lv;
+    PROGRESS.totalDistance = (PROGRESS.totalDistance || 0) + Math.max(0, finalScore);
+    PROGRESS.bestCombo = Math.max(PROGRESS.bestCombo || 0, state.comboMax || 0);
+    PROGRESS.coins = (PROGRESS.coins || 0) + Math.floor(finalScore / 120);
+    PROGRESS.xp = (PROGRESS.xp || 0) + Math.floor(finalScore * 0.12) + 20;
+    const lvAfter = levelInfo(PROGRESS).lv;
 
     const unlocked = [];
 
@@ -2990,6 +3826,11 @@
       }
     }
 
+    // 等级提升：作为一条额外解锁提示展示
+    if (lvAfter > lvBefore) {
+      unlocked.unshift({ icon: 'LV', name: '等级提升 · Lv.' + lvAfter, sub: '获得成长奖励，继续冲刺', tag: '升级' });
+    }
+
     saveProgressData(PROGRESS);
     return unlocked;
   }
@@ -2998,17 +3839,19 @@
   function renderUnlocks(list) {
     ouList.innerHTML = '';
     if (!list || !list.length) { overUnlocks.hidden = true; return; }
-    for (const u of list) {
+    list.forEach((u, i) => {
       const item = document.createElement('div');
       item.className = 'ou-item';
+      item.style.animationDelay = (i * 0.07).toFixed(2) + 's';   // 逐条淡入，形成解锁动画
       item.innerHTML =
         '<div class="ou-ico">' + u.icon + '</div>' +
         '<div><div class="ou-name">' + u.name + '</div>' +
         '<div class="ou-sub">' + u.sub + '</div></div>' +
         '<div class="ou-tag">' + u.tag + '</div>';
       ouList.appendChild(item);
-    }
+    });
     overUnlocks.hidden = false;
+    sfxAchieve();   // 解锁提示音
   }
 
   /** 新一局开始前，把 PROGRESS 里的 livesMax 带入 state.lives；以及 shieldStart 带入 shieldUntil */
@@ -3032,6 +3875,8 @@
     stageEl.classList.add('on');
     clearTimeout(stageTimer);
     stageTimer = setTimeout(() => stageEl.classList.remove('on'), 1800);
+    applyStageMood(st);
+    sfxStage();
   }
 
   /* ---------- 里程碑提示 ---------- */
@@ -3128,12 +3973,18 @@
     state.lives = CFG.startLives;
     state.shieldUntil = 0;
     state.magnetUntil = 0;
+    state.slowUntil = 0;
     state.invulnUntil = 0;
+    // 本局统计复位
+    state.flips = 0;
+    state.runTime = 0;
+    state.maxSpeedSeen = CFG.baseSpeed;
     // 复位复活流程（避免上一局的滑行/凝聚状态残留）
     state.revivePhase = '';
     state.reviveSlowAt = 0;
     state.reviveGatherAt = 0;
     state.reviveTravel = 0;
+    state.pausedAt = 0;
     // 清掉可能残留的复活动画，恢复小球正常透明度
     reviveFxUntil = 0;
     ballSprite.material.opacity = 0.82;
@@ -3147,6 +3998,7 @@
     stageEl.classList.remove('on');
     comboEl.classList.remove('on');
     msEl.classList.remove('on');
+    speedFx.classList.remove('on');
     newRecordTag.classList.add('hide');
     overGap.hidden = true;
     overGap.textContent = '';
@@ -3196,6 +4048,9 @@
   /** 开始一局：gameMode = 'endless' 无尽 / 'campaign' 闯关 */
   function startGame(gameMode, levelId) {
     audioInit();
+    ensureDailyFresh();          // 跨天时重置每日任务
+    applyStageMood(state.stage || 1);
+    setBgmActive(true);          // 游戏进行中播放背景音乐
 
     state.gameMode = gameMode === 'campaign' ? 'campaign' : 'endless';
     state.level = state.gameMode === 'campaign'
@@ -3203,6 +4058,7 @@
       : null;
     state.levelId = state.level ? state.level.id : 0;
     state.stage = state.level ? state.level.stage : 1;   // 闯关按关卡解锁机制
+    applyStageMood(state.stage);                         // 应用对应阶段的场景氛围
     state.best = playerBest();
     // 记下开局前的历史最高：本局结束后用来判断「新纪录」和「超过上一局」
     state.prevBest = state.best;
@@ -3252,6 +4108,13 @@
     p.stars[lv.id] = Math.max(p.stars[lv.id] || 0, stars);
     saveProgress(p);
 
+    // 闯关通关也参与成就 / 每日任务结算（总分、光点、翻转都可能解锁）
+    dailyAdd('d_dist', 0);
+    const clearedUnlocks = checkMedalsAndTasks(dist, false);
+    if (clearedUnlocks.length) showMilestone('解锁 ' + clearedUnlocks.length + ' 项新成就');
+    saveDaily();
+    setBgmActive(false);
+
     if (dist > state.best) state.best = dist;
 
     const next = LEVELS.find((l) => l.id === lv.id + 1);
@@ -3275,6 +4138,43 @@
     }, 520);
   }
 
+  /** 暂停游戏：冻结世界，显示暂停页（auto = 切后台自动暂停） */
+  function pauseGame(auto) {
+    if (state.mode !== 'playing') return;
+    state.mode = 'paused';
+    state.pausedAt = performance.now();
+    setBgmActive(false);
+    saveDaily();               // 暂停时把每日任务进度落盘
+    showScreen('pauseScreen');
+  }
+
+  /** 从暂停页恢复 */
+  function resumeGame() {
+    if (state.mode !== 'paused') return;
+    // 暂停期间的时间不应该消耗护盾 / 减速 / 复活流程，统一把截止时间往后顺延
+    const gap = Math.max(0, performance.now() - (state.pausedAt || performance.now()));
+    state.shieldUntil += gap;
+    state.magnetUntil += gap;
+    state.slowUntil += gap;
+    state.invulnUntil += gap;
+    state.inputLockUntil += gap;
+    if (state.reviveSlowAt) state.reviveSlowAt += gap;
+    if (state.reviveGatherAt) state.reviveGatherAt += gap;
+    if (reviveFxUntil) reviveFxUntil += gap;
+    state.pausedAt = 0;
+
+    state.mode = 'playing';
+    lastTime = performance.now();   // 重置帧时间，避免恢复第一帧 dt 过大
+    setBgmActive(true);
+    showScreen(null);
+  }
+
+  /** 暂停页「重新开始」：直接按当前模式重开 */
+  function restartFromPause() {
+    if (state.mode !== 'paused') return;
+    startGame(state.gameMode, state.levelId);
+  }
+
   /** 回到主页（保留昵称与进度） */
   function goHome() {
     clearTimeout(overTimer);
@@ -3286,7 +4186,10 @@
     state.levelId = 0;
     state.stage = 1;
     state.best = playerBest();
+    applyStageMood(1);         // 回到主页恢复初始场景氛围
 
+    setBgmActive(false);       // 回到主页停止 BGM
+    saveDaily();               // 结算每日任务进度
     resetGame();
     bestVal.textContent = String(state.best).padStart(5, '0');
     overRank.textContent = '';
@@ -3374,6 +4277,10 @@
     state.squashVel = 0;
     warnEl.classList.remove('on');
     resetCombo();              // 撞击 / 颜色不符：连击立即归零
+    // 死亡演出：红色粒子爆开 + 停止 BGM + 每日任务落盘
+    spawnBurst(0, state.ballY, 0.5, 0xff6a8a, 18, 5.0, 0.34);
+    saveDaily();
+    setBgmActive(false);
 
     const score = Math.floor(state.score);
     const prevBest = state.prevBest;                    // 本局开始前的历史最高
@@ -3401,6 +4308,14 @@
       overScore.textContent = String(score).padStart(5, '0');
       overBest.textContent = String(prevBest).padStart(5, '0');
       bestVal.textContent = String(state.best).padStart(5, '0');
+
+      // 本局成绩明细
+      osSpeed.textContent = Math.round(state.maxSpeedSeen * 3.6) + ' KM/H';
+      osCombo.textContent = String(state.comboMax);
+      osOrbs.textContent = String(state.orbs);
+      osFlip.textContent = String(state.flips);
+      osPickup.textContent = String(sessionPickupCount);
+      osTime.textContent = state.runTime.toFixed(1) + 's';
 
       // 破纪录：显示徽章 + 闪光 + 音效，并把允许重开的时间推后
       newRecordTag.classList.toggle('hide', !isNewRecord);
@@ -3460,6 +4375,9 @@
      十三、每帧更新
      ========================================================== */
   function update(dt) {
+    // 暂停时冻结一切逻辑（渲染仍在进行，画面保持静止）
+    if (state.mode === 'paused') return;
+
     const playing = state.mode === 'playing';
 
     // 复活演出（跑道滑行 → 粒子凝聚）优先推进，演出期间世界不再正常滚动
@@ -3474,13 +4392,20 @@
       if (state.boostTime > 0) state.boostTime -= dt;
     }
 
-    // 加速带生效期间临时提速
-    const spd = state.speed * (state.boostTime > 0 ? 1.38 : 1);
+    // 加速带生效期间临时提速；减速道具生效期间整体降速
+    const slowMul = performance.now() < state.slowUntil ? CFG.slowFactor : 1;
+    const spd = state.speed * (state.boostTime > 0 ? 1.38 : 1) * slowMul;
 
     // 复活演出期间：赛道不再正常滚动、分数与里程也不推进
     const frozen = state.revivePhase !== '';
 
     if (playing && !frozen) {
+      // 本局统计：净存活时间 / 最高速度 / 每日任务进度
+      state.runTime += dt;
+      if (spd > state.maxSpeedSeen) state.maxSpeedSeen = spd;
+      dailyAdd('d_dist', spd * dt);
+      if (state.gameMode === 'endless') dailyMax('d_survive', Math.floor(state.runTime));
+
       // distance 是物理里程，只用于生成节奏与阶段解锁，不受倍率影响
       state.distance += spd * dt;
       // score 是统一主分数（米）：里程按当前连击倍率累积，HUD / 排行榜 / 里程碑都看它
@@ -3574,12 +4499,29 @@
     if (playing && !reviveFxUntil && !state.revivePhase) {
       trailTimer -= dt;
       if (trailTimer <= 0) {
-        trailTimer = 0.014;
+        trailTimer = lowFx ? 0.026 : 0.014;   // 低特效时降低发射频率
         emitTrailParticle();
       }
     }
     updateTrail(dt);
     updateReviveBurst(dt);   // 复活粒子：向球心聚拢，结束后复原小球
+    updateBursts(dt);        // 通用粒子爆发（吃球 / 道具 / 撞击）
+
+    /* --- 皮肤外壳：跟随小球，只显示当前皮肤的颜色与呼吸光 --- */
+    const skinNow = getSkin(currentSkin);
+    if (skinNow.id === 'base' || state.revivePhase) {
+      skinShell.material.opacity = 0;
+    } else {
+      const skc = skinColor();
+      skinShell.material.color.setHex(skc);
+      skinShell.position.set(0, state.ballY + anchor, 0);
+      const breathe = 0.16 + Math.sin(performance.now() * 0.008) * 0.05;
+      skinShell.material.opacity = breathe;
+      skinShell.scale.setScalar(4.1 + Math.sin(performance.now() * 0.006) * 0.25);
+    }
+
+    // 加速带期间显示边缘速度光（不遮挡跑道中央）
+    speedFx.classList.toggle('on', playing && state.boostTime > 0);
 
     // 光晕呼吸（复活演出期间隐藏光晕，避免提前暴露小球位置）
     if (state.revivePhase || reviveFxUntil) ballGlow.material.opacity = 0;
@@ -3596,15 +4538,16 @@
           return;
         }
 
-        /* 4.1 障碍墙：物理判定（球心高度是否越过墙顶） */
+        /* 4.1 障碍墙：物理判定（球心高度是否越过墙顶）
+           判定半径 / 高度各放宽一点点，避免“视觉上已经擦过却判死”的挫败感 */
         const blen = Math.max(2.0, Math.min(seg.len * 0.42, 4.2));
-        const overlapZ = Math.abs(seg.group.position.z) < blen / 2 + CFG.ballR;
+        const overlapZ = Math.abs(seg.group.position.z) < blen / 2 + CFG.ballR * 0.78;
 
-        if (overlapZ && seg.barrierBottom && state.ballY - CFG.ballR < -CFG.halfH + CFG.barrierH) {
+        if (overlapZ && seg.barrierBottom && state.ballY - CFG.ballR < -CFG.halfH + CFG.barrierH - 0.07) {
           die('撞上障碍');
           return;
         }
-        if (overlapZ && seg.barrierTop && state.ballY + CFG.ballR > CFG.halfH - CFG.barrierH) {
+        if (overlapZ && seg.barrierTop && state.ballY + CFG.ballR > CFG.halfH - CFG.barrierH + 0.07) {
           die('撞上障碍');
           return;
         }
@@ -3657,7 +4600,10 @@
               flipGravity();                 // 弹跳板：强制换层
               state.ballVel = state.gravity * 11;
             } else {
-              state.boostTime = 1.15;        // 加速带：短暂提速
+              // 加速带：短暂提速 + 金色粒子 + 边缘速度光
+              state.boostTime = 1.15;
+              spawnBurst(0, state.ballY, 0.4, 0xffe39a, 10, 3.6, 0.28);
+              speedFx.classList.add('on');
               tone(520, 0.16, 'square', 0.042, 1040);
             }
           }
@@ -3730,6 +4676,15 @@
     }
 
     /* --- 5. 相机跟随 + 震动 + 速度感（FOV） --- */
+    // 阶段氛围色缓慢过渡（雾色 / 背景同步）
+    const moodK = Math.min(1, dt * 0.7);
+    scene.fog.color.lerp(moodFog, moodK);
+    scene.background.lerp(moodFog, moodK);
+    // 跑道边缘霓虹呼吸：只改变泛光透明度，不影响颜色判定
+    const neonPulse = 0.10 + Math.sin(performance.now() * 0.0028) * 0.035;
+    glowMats[0].opacity = neonPulse;
+    glowMats[1].opacity = neonPulse;
+
     const camTargetY = 2.0 + state.ballY * 0.1;
     camera.position.y += (camTargetY - camera.position.y) * Math.min(1, dt * 5);
 
@@ -3761,6 +4716,8 @@
     speedVal.textContent = String(Math.round(spd * 3.6));
     // 增益状态倒计时每帧刷新（护盾/磁吸可能正好到期）
     refreshBuffsUI();
+    // 每日任务进度节流保存（约每 1.6 秒一次，避免频繁写盘）
+    dailyTick();
   }
 
   /* ==========================================================
@@ -3783,6 +4740,13 @@
     // 主页 / 关卡页 / 排行榜：交给按钮处理，键盘不接管
     if (state.mode === 'ready') return;
 
+    // 暂停中：P / Esc 继续，R 重开
+    if (state.mode === 'paused') {
+      if (e.code === 'KeyP' || e.code === 'Escape') resumeGame();
+      else if (e.code === 'KeyR') restartFromPause();
+      return;
+    }
+
     // 结算页：R / 空格 / 回车 重开，Esc 回主页
     if (state.mode === 'dead') {
       if (e.code === 'KeyR' || e.code === 'Space' || e.code === 'Enter') restartGame();
@@ -3795,10 +4759,26 @@
       flipGravity();
     } else if (e.code === 'Space') {
       toggleColor();
+    } else if (e.code === 'KeyP' || e.code === 'Escape') {
+      pauseGame();
     } else if (e.code === 'KeyM') {
-      muted = !muted;   // 静音开关
+      // 静音开关：与设置页共用同一份配置并持久化
+      audioCfg.muted = !audioCfg.muted;
+      saveAudioCfg();
+      applyAudioSettings();
+      if (btnMute) btnMute.textContent = audioCfg.muted ? '开启' : '关闭';
     }
   });
+
+  /* 浏览器切到后台 / 标签页隐藏时自动暂停，避免回来时角色已经撞死 */
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      saveDaily();   // 切后台先把任务进度落盘
+      if (state.mode === 'playing') pauseGame(true);
+    }
+  });
+  // 页面卸载前保存任务进度
+  window.addEventListener('pagehide', saveDaily);
 
   /* --- 主页按钮 --- */
   modeEndless.addEventListener('click', () => startGame('endless'));
@@ -3815,6 +4795,29 @@
     renderMedals();
     showScreen('medalScreen');
   });
+  // 皮肤页
+  openSkins.addEventListener('click', () => {
+    renderSkins();
+    showScreen('skinScreen');
+  });
+  // 每日任务页
+  openDaily.addEventListener('click', () => {
+    ensureDailyFresh();
+    renderDaily();
+    showScreen('dailyScreen');
+  });
+  // 设置页：把当前音量同步到滑杆
+  openSettings.addEventListener('click', () => {
+    volBgm.value = String(Math.round(audioCfg.bgm * 100));
+    volSfx.value = String(Math.round(audioCfg.sfx * 100));
+    volBgmVal.textContent = volBgm.value;
+    volSfxVal.textContent = volSfx.value;
+    btnMute.textContent = audioCfg.muted ? '开启' : '关闭';
+    showScreen('settingsScreen');
+  });
+  skinBack.addEventListener('click', () => { renderHome(); showScreen('startScreen'); });
+  dailyBack.addEventListener('click', () => { renderHome(); showScreen('startScreen'); });
+  settingsBack.addEventListener('click', () => { renderHome(); showScreen('startScreen'); });
   medalBack.addEventListener('click', () => {
     renderHome();
     showScreen('startScreen');
@@ -3841,11 +4844,52 @@
   /* --- 结算按钮 --- */
   btnRetry.addEventListener('click', restartGame);
   btnHome.addEventListener('click', goHome);
+  // 结算页直接查看排行榜
+  btnOverBoard.addEventListener('click', () => {
+    renderBoard();
+    showScreen('boardScreen');
+  });
   btnAgain.addEventListener('click', () => startGame('campaign', state.levelId));
   btnClearHome.addEventListener('click', goHome);
   btnNext.addEventListener('click', () => {
     const next = LEVELS.find((l) => l.id === state.levelId + 1);
     if (next) startGame('campaign', next.id);
+  });
+
+  /* --- 暂停按钮 / 暂停页 --- */
+  btnPause.addEventListener('click', () => pauseGame());
+  btnResume.addEventListener('click', resumeGame);
+  btnPauseRestart.addEventListener('click', restartFromPause);
+  btnPauseHome.addEventListener('click', goHome);
+
+  /* --- 设置页：音量滑杆与静音 --- */
+  volBgm.addEventListener('input', () => {
+    audioCfg.bgm = Number(volBgm.value) / 100;
+    volBgmVal.textContent = volBgm.value;
+    saveAudioCfg();
+    audioInit();
+    applyAudioSettings();
+    // 非游戏中调整时，短暂试听 1.2 秒，方便确认音量
+    if (state.mode !== 'playing') {
+      setBgmActive(true);
+      clearTimeout(bgmPreviewTimer);
+      bgmPreviewTimer = setTimeout(() => { if (state.mode !== 'playing') setBgmActive(false); }, 1200);
+    }
+  });
+  volSfx.addEventListener('input', () => {
+    audioCfg.sfx = Number(volSfx.value) / 100;
+    volSfxVal.textContent = volSfx.value;
+    saveAudioCfg();
+    audioInit();
+    applyAudioSettings();
+    tone(660, 0.06, 'triangle', 0.05, 880);   // 实时试听音效
+  });
+  btnMute.addEventListener('click', () => {
+    audioCfg.muted = !audioCfg.muted;
+    btnMute.textContent = audioCfg.muted ? '开启' : '关闭';
+    saveAudioCfg();
+    audioInit();
+    applyAudioSettings();
   });
 
   // 移动端按钮（仅在游戏进行中生效）
@@ -3881,12 +4925,30 @@
      十六、主循环
      ========================================================== */
   let lastTime = performance.now();
+  // 帧率统计：连续偏低时自动降低渲染精度，保证弱设备也能流畅
+  let fpsAccum = 0;
+  let fpsFrames = 0;
 
   function loop(now) {
     requestAnimationFrame(loop);
     // 限制单帧步长，避免切后台回来后瞬移
     const dt = Math.min(0.05, (now - lastTime) / 1000);
     lastTime = now;
+
+    // 每 2 秒统计一次帧率；低于 45 时降级一次（只降不升，避免来回抖动）
+    fpsAccum += dt;
+    fpsFrames++;
+    if (fpsAccum >= 2) {
+      const fps = fpsFrames / fpsAccum;
+      if (!lowFx && fps < 45) {
+        lowFx = true;
+        renderer.setPixelRatio(1);
+        console.warn('[perf] 检测到帧率偏低，已自动切换到低特效模式');
+      }
+      fpsAccum = 0;
+      fpsFrames = 0;
+    }
+
     update(dt);
     renderer.render(scene, camera);
   }
