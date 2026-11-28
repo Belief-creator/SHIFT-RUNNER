@@ -88,3 +88,23 @@ create trigger scores_rate_limit_trg
   before insert on public.scores
   for each row
   execute function public.scores_rate_limit();
+
+-- 5. 可选升级：真实跑动距离（与得分 dist 分离） -------------------------
+-- 说明：
+--   * dist 字段继续表示「得分」，保持历史成绩与旧前端兼容；
+--   * distance 表示本局真实跑动距离，旧记录为 NULL，前端显示「—」，不会伪造；
+--   * 前端检测到该列不存在时会自动降级为旧查询，不影响使用。
+alter table public.scores
+  add column if not exists distance integer;
+
+-- 距离范围约束（允许 NULL；仅对新写入生效）
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'scores_distance_range'
+  ) then
+    alter table public.scores
+      add constraint scores_distance_range
+      check (distance is null or distance between 0 and 100000);
+  end if;
+end $$;

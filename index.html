@@ -7,9 +7,10 @@
 <style>
   /* ===================== 全局与配色 ===================== */
   :root{
-    --c1:#2ed3be;         /* 青 */
-    --c2:#f2ae3c;         /* 金 */
-    --bg:#06070d;
+    --c1:#20dccb;         /* 青 */
+    --c2:#ffb94f;         /* 金 */
+    --c3:#ff536b;         /* 危险红 */
+    --bg:#080d19;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);}
@@ -97,6 +98,7 @@
     box-shadow:0 0 14px currentColor;
     transition:color .08s linear;
   }
+  .core b{color:#eafcff;font-weight:700;letter-spacing:.06em;}
   .pts{margin-top:9px;font-size:9px;letter-spacing:.24em;color:rgba(175,215,210,.45);}
   .pts b{color:#ffdda4;font-size:13px;letter-spacing:.05em;margin-left:6px;font-variant-numeric:tabular-nums;}
 
@@ -183,6 +185,14 @@
     transition:opacity .34s ease,visibility .34s ease;
   }
   .overlay.hide{opacity:0;visibility:hidden;pointer-events:none;}
+  /* 覆盖层统一细滚动条：避免默认粗白滚动条破坏科幻界面 */
+  .overlay{scrollbar-width:thin;scrollbar-color:rgba(32,220,203,.4) transparent;}
+  .overlay::-webkit-scrollbar{width:6px;height:6px;}
+  .overlay::-webkit-scrollbar-track{background:transparent;}
+  .overlay::-webkit-scrollbar-thumb{
+    border-radius:999px;
+    background:linear-gradient(180deg,rgba(32,220,203,.55),rgba(255,185,79,.4));
+  }
   /* 主页 / 昵称页时隐藏游戏 HUD，保持画面干净 */
   #hud{transition:opacity .28s ease;}
   #hud.off{opacity:0;}
@@ -220,7 +230,7 @@
   }
   .c1{color:var(--c1);}
   .c2{color:var(--c2);}
-  .c3{color:#c2564f;}
+  .c3{color:var(--c3);}
   .cta{
     margin:30px auto 0;display:inline-flex;align-items:center;gap:11px;
     padding:12px 28px;border-radius:999px;
@@ -311,6 +321,31 @@
     .ou-name{font-size:11.5px;}
     .ou-sub{font-size:9.5px;}
     .ou-tag{font-size:8.5px;padding:2px 7px;}
+
+    /* 手机排行榜：昵称与排名第一行，得分最突出，距离/光点第二行 */
+    #boardScreen .panel{padding:12px 12px 10px;border-radius:18px;}
+    .podium{gap:6px;margin-top:12px;}
+    .podium-card{padding:9px 6px;border-radius:12px;}
+    .podium-card.p1{transform:translateY(-3px);}
+    .podium-medal{width:27px;height:27px;font-size:11px;}
+    .podium-name{margin-top:6px;font-size:10px;}
+    .podium-score{font-size:16px;}
+    .p1 .podium-score{font-size:19px;}
+    .podium-score small{font-size:7px;}
+    .podium-sub{display:none;}
+    .board-scroll{max-height:34vh;}
+    .board-row{grid-template-columns:30px minmax(0,1fr) auto;padding:9px 10px;}
+    .board-row.head{display:none;}
+    .bi-rank{grid-area:auto;}
+    .bi-player{grid-area:auto;min-width:0;}
+    .bi-score{grid-area:auto;font-size:17px;}
+    .bi-dist,.bi-pts{display:none;}
+    .bi-sub{display:block;}
+    .board-me{grid-template-columns:30px minmax(0,1fr) auto;padding:9px 10px;}
+    .bm-meta{grid-column:2;display:block;margin-top:3px;font-size:9px;color:rgba(255,231,188,.6);}
+    .bm-score{font-size:17px;}
+    .bm-dist,.bm-pts{display:none;}
+    .board-error{font-size:10px;padding:9px 11px;}
   }
 
   /* 横屏矮屏：压缩主页 / 结算页垂直间距，尽量让内容一屏可见，减少滚动 */
@@ -360,15 +395,15 @@
 
   /* ============ 结算页成绩明细 ============ */
   .over-stats{
-    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
-    margin:16px auto 0;max-width:430px;width:100%;
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;
+    margin:14px auto 0;max-width:500px;width:100%;
   }
   .os-item{
-    padding:9px 6px;border-radius:11px;text-align:center;
+    padding:8px 4px;border-radius:10px;text-align:center;
     background:rgba(255,255,255,.04);border:1px solid rgba(120,205,192,.14);
   }
-  .os-item span{display:block;font-size:9px;letter-spacing:.14em;color:rgba(160,210,205,.55);}
-  .os-item b{display:block;margin-top:5px;font-size:15px;color:#eafcff;font-variant-numeric:tabular-nums;}
+  .os-item span{display:block;font-size:8.5px;letter-spacing:.1em;color:rgba(160,210,205,.55);}
+  .os-item b{display:block;margin-top:4px;font-size:13px;color:#eafcff;font-variant-numeric:tabular-nums;}
 
   /* ============ 主页个人等级卡 ============ */
   .profile-card{
@@ -564,37 +599,164 @@
   /* ============ 排行榜 ============ */
   /* 排行榜标题始终单行（PC / 移动端一致），避免空格处换行 */
   #boardScreen .over-title{white-space:nowrap;}
-  .board{margin:18px 0;max-height:48vh;overflow:auto;}
-  .board-row{
-    display:grid;grid-template-columns:32px 1fr auto auto;gap:10px;align-items:center;
-    padding:10px 12px;border-radius:10px;font-size:12px;letter-spacing:.05em;
-    color:rgba(210,240,236,.82);
-  }
-  .board-row + .board-row{margin-top:4px;}
-  .board-row.head{
-    padding-bottom:4px;font-size:9px;letter-spacing:.24em;color:rgba(160,210,205,.45);
-  }
-  .board-row.me{background:rgba(46,211,190,.1);border:1px solid rgba(46,211,190,.25);}
-  .board-rank{color:#ffce7a;font-variant-numeric:tabular-nums;}
-  .board-dist{color:#eafcff;font-variant-numeric:tabular-nums;}
-  .board-pts{font-size:11px;color:rgba(255,214,150,.8);font-variant-numeric:tabular-nums;}
-  .board-empty{padding:26px 0;text-align:center;font-size:11px;letter-spacing:.2em;color:rgba(160,210,205,.4);}
-  .board-note{margin:-6px 0 14px;text-align:center;font-size:9.5px;letter-spacing:.16em;color:rgba(160,210,205,.38);}
+  #boardScreen .panel{max-width:800px;}
 
-  /* 榜单底部「我的排名」：sticky 吸附在列表底部，滚动时始终可见 */
-  .board-me{
-    position:sticky;bottom:0;z-index:2;
-    display:grid;grid-template-columns:32px 1fr auto;gap:10px;align-items:center;
-    margin-top:8px;padding:10px 12px;border-radius:10px;
-    font-size:12px;letter-spacing:.05em;color:#fff2d0;
-    background:linear-gradient(90deg,rgba(242,174,60,.24),rgba(242,174,60,.10));
-    border:1px solid rgba(242,174,60,.42);
-    box-shadow:0 -8px 22px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.12);
-    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  /* 排行榜专用：青金渐变标题 + 玻璃面板，和结算页的危险红区分开 */
+  #boardScreen .over-title{
+    background:linear-gradient(180deg,#ffffff,#c6fff8 36%,#20dccb 68%,#ffb94f 98%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 26px rgba(32,220,203,.35));
   }
-  .bm-rank{color:#ffd88f;font-variant-numeric:tabular-nums;font-size:12px;}
+  #boardScreen .panel{
+    padding:18px 18px 16px;border-radius:22px;
+    background:linear-gradient(160deg,rgba(10,24,36,.72),rgba(4,10,20,.58));
+    border:1px solid rgba(32,220,203,.18);
+    box-shadow:0 24px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  }
+
+  /* ---- 前三名荣誉区 ---- */
+  .podium{
+    display:grid;grid-template-columns:1fr 1.12fr 1fr;gap:10px;
+    margin:18px 0 12px;align-items:end;
+  }
+  .podium-card{
+    position:relative;padding:12px 10px 11px;border-radius:16px;text-align:center;
+    background:linear-gradient(180deg,rgba(18,34,48,.82),rgba(6,12,22,.62));
+    border:1px solid rgba(120,205,192,.18);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+    overflow:hidden;
+  }
+  .podium-card::after{
+    content:'';position:absolute;inset:auto 0 0;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(46,211,190,.55),transparent);
+  }
+  .podium-card.p1{
+    border-color:rgba(255,190,90,.62);
+    background:linear-gradient(180deg,rgba(70,48,16,.72),rgba(12,10,16,.72));
+    box-shadow:0 0 34px rgba(255,185,79,.28),inset 0 1px 0 rgba(255,255,255,.16);
+    transform:translateY(-6px);
+  }
+  .podium-card.p2{
+    border-color:rgba(205,225,236,.45);
+    background:linear-gradient(180deg,rgba(36,48,58,.75),rgba(8,12,18,.7));
+  }
+  .podium-card.p3{
+    border-color:rgba(214,140,92,.5);
+    background:linear-gradient(180deg,rgba(58,34,20,.72),rgba(10,10,14,.7));
+  }
+  .podium-medal{
+    width:34px;height:34px;margin:0 auto;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:800;color:#081018;
+    background:linear-gradient(160deg,#e8f4ff,#9fb8c8);
+    box-shadow:0 0 18px rgba(200,225,240,.35);
+  }
+  .p1 .podium-medal{
+    background:linear-gradient(160deg,#ffe9a8,#ffb94f);
+    box-shadow:0 0 22px rgba(255,185,79,.75),inset 0 1px 0 #fff;
+  }
+  .p3 .podium-medal{background:linear-gradient(160deg,#f3c39a,#c4794a);color:#2a1408;}
+  .podium-name{
+    margin-top:8px;font-size:12px;font-weight:700;letter-spacing:.05em;color:#eafcff;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .podium-score{
+    margin-top:4px;font-size:23px;font-weight:800;line-height:1;
+    color:#fff3d6;font-variant-numeric:tabular-nums;
+    text-shadow:0 0 16px rgba(242,174,60,.45);
+  }
+  .p1 .podium-score{font-size:27px;}
+  .podium-score small{font-size:9px;letter-spacing:.14em;color:rgba(255,230,190,.55);margin-left:3px;}
+  .podium-sub{margin-top:5px;font-size:9px;letter-spacing:.04em;color:rgba(175,215,210,.55);}
+  .podium-card.empty{opacity:.35;}
+  .podium-card.empty .podium-score{color:rgba(220,240,255,.4);}
+
+  /* ---- 榜单滚动区 ---- */
+  .board-scroll{
+    max-height:36vh;overflow-y:auto;overflow-x:hidden;
+    margin-top:6px;padding-right:4px;
+    overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  }
+  .board-scroll::-webkit-scrollbar{width:5px;}
+  .board-scroll::-webkit-scrollbar-track{background:transparent;}
+  .board-scroll::-webkit-scrollbar-thumb{
+    border-radius:999px;
+    background:linear-gradient(180deg,rgba(46,211,190,.55),rgba(242,174,60,.45));
+  }
+  .board-scroll{scrollbar-width:thin;scrollbar-color:rgba(46,211,190,.55) transparent;}
+  .board-list{display:grid;gap:6px;padding-bottom:4px;}
+
+  .board-row{
+    display:grid;grid-template-columns:42px minmax(0,1fr) 98px 84px 54px;gap:8px;align-items:center;
+    padding:10px 12px;border-radius:12px;font-size:12px;letter-spacing:.04em;
+    color:rgba(210,240,236,.84);
+    background:linear-gradient(90deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
+    border:1px solid rgba(120,205,192,.1);
+  }
+  .board-row.head{
+    padding:2px 12px 4px;background:none;border:none;
+    font-size:9px;letter-spacing:.2em;color:rgba(160,210,205,.42);
+  }
+  .board-row.me{
+    background:linear-gradient(90deg,rgba(46,211,190,.16),rgba(242,174,60,.06));
+    border-color:rgba(46,211,190,.4);
+    box-shadow:inset 0 0 20px rgba(46,211,190,.08);
+  }
+  .bi-rank{font-variant-numeric:tabular-nums;color:rgba(255,214,150,.75);font-weight:700;}
+  .bi-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#eafcff;}
+  .bi-sub{display:none;margin-top:3px;font-size:9px;letter-spacing:.04em;color:rgba(175,215,210,.5);}
+  .bi-score{
+    text-align:right;font-size:16px;font-weight:800;color:#fff3d6;
+    font-variant-numeric:tabular-nums;text-shadow:0 0 12px rgba(242,174,60,.3);
+  }
+  .bi-score small{font-size:8px;letter-spacing:.1em;color:rgba(255,230,190,.45);margin-left:2px;font-weight:400;}
+  .bi-dist,.bi-pts{
+    text-align:right;font-variant-numeric:tabular-nums;
+    font-size:11px;color:rgba(190,235,230,.7);
+  }
+  .bi-pts{color:rgba(255,214,150,.85);}
+  .board-empty{padding:30px 0;text-align:center;font-size:11px;letter-spacing:.18em;color:rgba(160,210,205,.45);}
+  .board-note{margin:8px 0 12px;text-align:center;font-size:9.5px;letter-spacing:.12em;color:rgba(160,210,205,.4);}
+  .board-error{
+    display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;
+    margin:10px auto;padding:10px 14px;max-width:520px;border-radius:12px;
+    font-size:11px;letter-spacing:.06em;color:#ffc9cd;
+    background:rgba(255,83,107,.08);border:1px solid rgba(255,83,107,.3);
+  }
+  .board-error .btn{padding:7px 16px;font-size:10px;}
+
+  /* ---- 我的排名：在滚动区之外，固定不遮挡列表 ---- */
+  .board-me{
+    display:grid;grid-template-columns:42px minmax(0,1fr) 98px 84px 54px;gap:8px;align-items:center;
+    margin-top:10px;padding:10px 12px;border-radius:12px;
+    font-size:12px;letter-spacing:.04em;color:#fff2d0;
+    background:linear-gradient(90deg,rgba(242,174,60,.22),rgba(242,174,60,.08));
+    border:1px solid rgba(242,174,60,.4);
+    box-shadow:0 6px 22px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.1);
+  }
+  .bm-rank{font-variant-numeric:tabular-nums;color:#ffd88f;font-weight:700;}
   .bm-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .bm-dist{font-variant-numeric:tabular-nums;color:#ffe7bc;font-size:11.5px;}
+  .bm-meta{display:none;}
+  .bm-score{text-align:right;font-size:16px;font-weight:800;color:#ffe7bc;font-variant-numeric:tabular-nums;}
+  .bm-score small{font-size:8px;color:rgba(255,230,190,.45);margin-left:2px;font-weight:400;}
+  .bm-dist,.bm-pts{text-align:right;font-variant-numeric:tabular-nums;font-size:11px;color:rgba(255,231,188,.75);}
+
+  /* ---- 主页云端状态 ---- */
+  .cloud-status{
+    display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;
+    margin-top:10px;font-size:10px;letter-spacing:.06em;color:rgba(175,215,210,.55);
+  }
+  .cloud-status .cs-dot{
+    width:7px;height:7px;border-radius:50%;background:#ffb94f;
+    box-shadow:0 0 10px #ffb94f;
+  }
+  .cloud-status.ok{color:rgba(142,240,216,.75);}
+  .cloud-status.ok .cs-dot{background:#2ed3be;box-shadow:0 0 10px #2ed3be;}
+  .cloud-status.fail{color:rgba(255,150,160,.85);}
+  .cloud-status.fail .cs-dot{background:#ff536b;box-shadow:0 0 10px #ff536b;}
+  .cloud-status.busy .cs-dot{animation:cloudBlink .9s ease-in-out infinite;}
+  @keyframes cloudBlink{0%,100%{opacity:.25}50%{opacity:1}}
 
   /* ============ 结算页「本局解锁」：勋章 / 任务统一排版 ============ */
   .over-unlocks{margin:16px auto 0;max-width:420px;width:100%;text-align:left;}
@@ -795,9 +957,11 @@
     <div class="hud-upper">
     <div class="hud-top">
       <div class="stat">
-        <div class="label">DISTANCE</div>
-        <div class="score"><span id="score">00000</span><small>M</small></div>
-        <div class="core"><i class="dot" id="coreDot"></i><span>核心颜色</span></div>
+        <div class="label">SCORE</div>
+        <div class="score"><span id="score">00000</span><small>分</small></div>
+        <div class="core"><i class="dot" id="coreDot"></i><span>核心颜色 · <b id="laneTag">下层</b></span></div>
+        <!-- 真实跑动距离：与得分分开显示，避免把得分误当距离 -->
+        <div class="pts">里程 <b id="hudDist">0</b> M</div>
         <!-- 复活次数：心形图标，无复活时隐藏 -->
         <div class="lives" id="livesWrap" hidden>
           <i class="heart">&#9829;</i>×<span id="livesVal">0</span>
@@ -898,6 +1062,13 @@
         </div>
       </div>
 
+      <!-- 云端连接状态：手机端可直观看到连接 / 失败原因，并提供重连 -->
+      <div class="cloud-status" id="cloudStatus">
+        <i class="cs-dot"></i>
+        <span id="cloudStatusTxt">正在连接云端…</span>
+        <button id="cloudRetry" class="link" type="button" hidden>重新连接</button>
+      </div>
+
       <div class="modes">
         <button class="mode" id="modeCampaign" type="button">
           <div class="mode-name">闯 关 模 式</div>
@@ -940,11 +1111,26 @@
 
   <!-- ===================== 排行榜 ===================== -->
   <div class="overlay hide" id="boardScreen">
-    <div class="panel">
+    <div class="panel board-panel">
       <div class="over-title">无 尽 排 行 榜</div>
-      <div class="over-reason">按分数排名，同分看光点</div>
-      <div class="board" id="boardList"></div>
+      <div class="over-reason">按实际得分排名 · 同分依次比较光点与距离</div>
+
+      <!-- 前三名荣誉展示区 -->
+      <div class="podium" id="boardPodium"></div>
+
+      <!-- 榜单滚动区：与底部「我的排名」完全分离，滚动不会遮挡 -->
+      <div class="board-scroll" id="boardScroll">
+        <div class="board-list" id="boardList"></div>
+      </div>
+
+      <!-- 当前玩家排名：固定在滚动区下方，不参与滚动 -->
+      <div class="board-me" id="boardMe" hidden></div>
+
       <div class="board-note" id="boardNote"></div>
+      <div class="board-error" id="boardError" hidden>
+        <span id="boardErrorTxt">云端暂时无法连接，请检查网络后重试。</span>
+        <button class="btn ghost" id="boardRetry" type="button">重新加载</button>
+      </div>
       <button class="btn ghost" id="boardBack" type="button">返回主页</button>
     </div>
   </div>
@@ -1014,13 +1200,14 @@
       <div class="new-record hide" id="newRecordTag">新纪录！🔥</div>
 
       <!-- 本次成绩用大字号，历史最高用小字对比 -->
-      <div class="over-score"><span id="overScore">00000</span><small>M</small></div>
-      <div class="over-best">历史最高 <span id="overBest">00000</span> M</div>
+      <div class="over-score"><span id="overScore">00000</span><small>分</small></div>
+      <div class="over-best">历史最高 <span id="overBest">00000</span> 分</div>
       <div class="over-gap" id="overGap" hidden></div>
       <div class="over-rank" id="overRank"></div>
 
       <!-- 本局成绩明细：最高速度 / 最高连击 / 光点 / 翻转 / 道具 -->
       <div class="over-stats">
+        <div class="os-item"><span>跑动距离</span><b id="osDist">0</b></div>
         <div class="os-item"><span>最高速度</span><b id="osSpeed">0</b></div>
         <div class="os-item"><span>最高连击</span><b id="osCombo">0</b></div>
         <div class="os-item"><span>光点</span><b id="osOrbs">0</b></div>
@@ -1087,6 +1274,9 @@
       }
     }, 12000);
   </script>
+
+  <!-- Supabase 客户端：优先使用本地 vendor（移动端网络不稳定时也能连上），失败再走 CDN 动态导入 -->
+  <script src="./vendor/supabase.min.js"></script>
 
   <!-- 云端榜单配置（公开的 anon key，安全由数据库 RLS 保证） -->
   <script src="config.js"></script>
@@ -1172,7 +1362,7 @@
     audioSaveKey: 'sr_audio_v1',     // 音量设置存档键
   };
 
-  const COLORS = [0x2ed3be, 0xf2ae3c];        // 0 = 青，1 = 金（饱和度提高，远处也一眼可辨）
+  const COLORS = [0x20dccb, 0xffb94f];        // 0 = 青，1 = 金（新色板，语义不变）
   const SURFACE_Y = CFG.halfH - 0.1;          // 跑道内表面相对中线的距离
   const BALL_REST_Y = SURFACE_Y - CFG.ballR;  // 小球贴地时球心的 |y|
 
@@ -1189,8 +1379,8 @@
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x06070d);
-  scene.fog = new THREE.Fog(0x06070d, 26, 88);   // 远处淡出，营造纵深感
+  scene.background = new THREE.Color(0x080d19);
+  scene.fog = new THREE.Fog(0x080d19, 26, 88);   // 远处淡出，营造纵深感
 
   const camera = new THREE.PerspectiveCamera(66, window.innerWidth / window.innerHeight, 0.1, 260);  // 2.5D 侧视：相机在跑道侧上方，跑道向画面纵深斜向延伸
   camera.position.set(12.2, 2.0, 10.2);
@@ -1267,9 +1457,9 @@
     const c = document.createElement('canvas');
     c.width = c.height = s;
     const g = c.getContext('2d');
-    g.fillStyle = '#241010';
+    g.fillStyle = '#2a0f18';
     g.fillRect(0, 0, s, s);
-    g.strokeStyle = '#c2564f';
+    g.strokeStyle = '#ff536b';
     g.lineWidth = 20;
     for (let i = -s; i < s * 2; i += 46) {
       g.beginPath();
@@ -1330,13 +1520,65 @@
     return t;
   }
 
+  /**
+   * 跑道金属科技纹理：深色底 + 细密网格 + 断续能量短线。
+   * 只作为基础色贴图，不改变青/金判定色，远处仍靠边缘灯带识别。
+   */
+  function makeTechTexture() {
+    const s = 256;
+    const c = document.createElement('canvas');
+    c.width = c.height = s;
+    const g = c.getContext('2d');
+    const grd = g.createLinearGradient(0, 0, s, s);
+    grd.addColorStop(0, '#0c141f');
+    grd.addColorStop(0.5, '#0a111a');
+    grd.addColorStop(1, '#0e1723');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, s, s);
+
+    // 细密网格
+    g.strokeStyle = 'rgba(120,180,200,0.09)';
+    g.lineWidth = 1;
+    for (let i = 0; i <= s; i += 16) {
+      g.beginPath(); g.moveTo(i, 0); g.lineTo(i, s); g.stroke();
+      g.beginPath(); g.moveTo(0, i); g.lineTo(s, i); g.stroke();
+    }
+
+    // 随机电路短线，增加“科技表面”的细节
+    for (let i = 0; i < 26; i++) {
+      const x = Math.floor(Math.random() * s);
+      const y = Math.floor(Math.random() * s);
+      const w = 18 + Math.random() * 46;
+      g.strokeStyle = i % 3 === 0 ? 'rgba(32,220,203,0.20)' : 'rgba(150,200,220,0.12)';
+      g.lineWidth = i % 4 === 0 ? 2 : 1;
+      g.beginPath();
+      g.moveTo(x, y);
+      g.lineTo(x + w, y);
+      g.lineTo(x + w, y + 10);
+      g.stroke();
+    }
+
+    // 面板拼缝（横向暗线，形成金属板感）
+    g.strokeStyle = 'rgba(0,0,0,0.45)';
+    g.lineWidth = 3;
+    for (let i = 0; i <= s; i += 64) {
+      g.beginPath(); g.moveTo(0, i); g.lineTo(s, i); g.stroke();
+    }
+
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(2, 6);
+    t.anisotropy = 2;
+    return t;
+  }
+
   const glowTex = makeRadialTexture();
   const stripTex = makeStripTexture();
   const wallTex = makeGridTexture();
   const stripeTex = makeStripeTexture();
   // 加速带（亮金）/ 弹跳板（亮紫）纹理：颜色提亮以拉开与跑道的对比
   const boostPadTex = makePadTexture(0xffe39a, 'speed');
-  const jumpPadTex = makePadTexture(0xb47bff, 'jump');
+  const jumpPadTex = makePadTexture(0x9b72ff, 'jump');
 
   /* ==========================================================
      四、共享几何体与材质（所有赛道段复用，降低开销）
@@ -1351,15 +1593,21 @@
     /* --- 道具几何体（三种道具共用一个 Octahedron，靠颜色区分） --- */
     pickupCore: new THREE.OctahedronGeometry(0.45, 0),
     pickupRing: new THREE.TorusGeometry(0.7, 0.06, 8, 28),  // 旋转光环
+
+    /* --- 新障碍几何体 --- */
+    rotRing: new THREE.TorusGeometry(2.55, 0.13, 6, 64, Math.PI * 1.15), // 旋转能量环（留有安全缺口）
+    laserCore: new THREE.BoxGeometry(1, 1, 1),                            // 激光横梁（复用 unit 尺寸）
   };
 
-  // 两种颜色的跑道材质（自发光霓虹；压暗成低调色面，靠边线提亮）
+  // 深色金属跑道：科技纹理打底 + 青/金自发光，靠边灯与能量线识别颜色
+  const techTex = makeTechTexture();
   const trackMats = COLORS.map((hex) => new THREE.MeshStandardMaterial({
-    color: 0x0d1418,
+    color: 0x5b6c7b,          // 深色金属底，纹理负责细节
+    map: techTex,
     emissive: hex,
-    emissiveIntensity: 0.5,
-    metalness: 0,
-    roughness: 1,
+    emissiveIntensity: 0.11,  // 只保留轻微颜色倾向，整体仍是深色跑道
+    metalness: 0.22,
+    roughness: 0.62,
   }));
 
   // 跑道边线材质：不受光照/色调映射影响，保持干净锐利的高光线条
@@ -1392,13 +1640,19 @@
     blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
   });
   const jumpGlowMat = new THREE.MeshBasicMaterial({
-    color: 0xb47bff, transparent: true, opacity: 1.0,
+    color: 0x9b72ff, transparent: true, opacity: 1.0,
     blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
   });
   // 踏板白色发光边框线框：强化轮廓，侧视下也能一眼定位踏板
   const padFrameMat = new THREE.LineBasicMaterial({ color: 0xffffff, toneMapped: false });
   // 断裂跑道的端头警示条
-  const dangerMat = new THREE.MeshBasicMaterial({ color: 0xd8574e, toneMapped: false });
+  const dangerMat = new THREE.MeshBasicMaterial({ color: 0xff536b, toneMapped: false });
+
+  /* --- 新障碍材质：激光红 / 发射器亮红 / 旋转环紫 ---
+     关闭雾效：远处也要能提前看见，给玩家足够的换层反应时间 */
+  const laserMatBase = new THREE.MeshBasicMaterial({ color: 0xff536b, toneMapped: false, transparent: true, opacity: 0.95, fog: false });
+  const laserEmitMat = new THREE.MeshBasicMaterial({ color: 0xffb0bb, toneMapped: false, fog: false });
+  const rotMat = new THREE.MeshBasicMaterial({ color: 0x9b72ff, toneMapped: false, transparent: true, opacity: 0.95, fog: false });
 
   /* ==========================================================
      五、隧道侧壁（静态，纹理滚动制造速度感）
@@ -1487,11 +1741,11 @@
 
   /* 阶段氛围：不同阶段雾色 / 隧道环色缓慢过渡，产生“场景变化” */
   const STAGE_MOODS = [
-    { fog: 0x06070d, a: 0x2ed3be, b: 0xf2ae3c },   // 1 热身：青金
-    { fog: 0x05111a, a: 0x39c6ff, b: 0x2ed3be },   // 2 断裂：偏蓝
-    { fog: 0x0d0a1c, a: 0x9d7bff, b: 0x39c6ff },   // 3 加速：紫蓝
-    { fog: 0x06131a, a: 0x8ef0d8, b: 0x9d7bff },   // 4 弹跳：青紫
-    { fog: 0x140a0e, a: 0xf2ae3c, b: 0xff6a8a },   // 5 极限：金红
+    { fog: 0x080d19, a: 0x20dccb, b: 0xffb94f },   // 1 深空起点：青金
+    { fog: 0x071523, a: 0x39c6ff, b: 0x20dccb },   // 2 青金霓虹隧道
+    { fog: 0x0d0a1e, a: 0x9b72ff, b: 0x39c6ff },   // 3 悬浮能量峡谷
+    { fog: 0x061421, a: 0x20dccb, b: 0x9b72ff },   // 4 高速星际通道
+    { fog: 0x150a12, a: 0xffb94f, b: 0xff536b },   // 5 深渊能量空间
   ];
   const moodFog = new THREE.Color(STAGE_MOODS[0].fog);
   /** 切换阶段氛围（只改目标色，逐帧插值，避免突兀） */
@@ -1974,6 +2228,24 @@
     const tEdgeL = new THREE.Mesh(GEO.unit, edgeMats[0]);
     const tEdgeR = new THREE.Mesh(GEO.unit, edgeMats[0]);
 
+    // 跑道面上的双能量线：强化青/金颜色识别与科技纵深感
+    const bLineL = new THREE.Mesh(GEO.unit, edgeMats[0]);
+    const bLineR = new THREE.Mesh(GEO.unit, edgeMats[0]);
+    const tLineL = new THREE.Mesh(GEO.unit, edgeMats[0]);
+    const tLineR = new THREE.Mesh(GEO.unit, edgeMats[0]);
+
+    // 激光横梁：每个赛道段一份材质，才能独立控制闪烁透明度
+    const laserBeam = new THREE.Mesh(GEO.unit, laserMatBase.clone());
+    const laserEmitL = new THREE.Mesh(GEO.unit, laserEmitMat);
+    const laserEmitR = new THREE.Mesh(GEO.unit, laserEmitMat);
+    laserBeam.visible = false;
+    laserEmitL.visible = false;
+    laserEmitR.visible = false;
+
+    // 旋转能量环：环上留缺口，缺口所在层就是安全层
+    const rotRing = new THREE.Mesh(GEO.rotRing, rotMat);
+    rotRing.visible = false;
+
     // 收集光点（每段最多两个）
     const orbA = new THREE.Sprite(pickMat);
     const orbB = new THREE.Sprite(pickMat);
@@ -2012,12 +2284,14 @@
     pickupRing.visible = false;
 
     group.add(bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR,
+      bLineL, bLineR, tLineL, tLineR, laserBeam, laserEmitL, laserEmitR, rotRing,
       orbA, orbB, bPad, bPadGlow, bPadFrame, tPad, tPadGlow, tPadFrame,
       bHoleMark, tHoleMark, bSeam, tSeam, pickupCore, pickupRing);
     scene.add(group);
 
     return {
       group, bSlab, tSlab, bGlow, tGlow, bBar, tBar, bEdgeL, bEdgeR, tEdgeL, tEdgeR,
+      bLineL, bLineR, tLineL, tLineR, laserBeam, laserEmitL, laserEmitR, rotRing,
       bPad, bPadGlow, bPadFrame, tPad, tPadGlow, tPadFrame,
       bHoleMark, tHoleMark, bSeam, tSeam, orbNodes: [orbA, orbB],
       far: 0, near: 0, len: 0,
@@ -2025,6 +2299,8 @@
       seamBottom: false, seamTop: false,
       barrierBottom: false, barrierTop: false,
       holeBottom: false, holeTop: false,
+      laserLane: -1, laserZ: 0, laserPhase: 0,   // 激光：封锁层 0/1，段内 z，闪烁相位
+      rotPhase: -1, rotSpeed: 0.8,               // 旋转环：初始相位，转速（rad/s）
       padLane: -1, padType: 'boost', padZ: 0, padHit: false,
       orbLane: [-1, -1], orbZ: [0, 0], orbTaken: [false, false],
       comboCounted: false,   // 本段是否已经为「成功躲避」加过连击
@@ -2098,11 +2374,49 @@
     s.tEdgeR.scale.set(ED_W, ED_H, len);
     s.tEdgeR.position.set(ED_X, SURFACE_Y - 0.06, 0);
 
-    // --- 断裂跑道：整层隐藏（板面 / 泛光 / 边线），只在近端留一条红色断口标记 ---
+    // --- 双能量线：跑道面上两条同色细光带，强化颜色与速度感 ---
+    const LN_X = 2.26, LN_W = 0.11, LN_H = 0.04;
+    s.bLineL.material = edgeMats[s.colorBottom];
+    s.bLineL.scale.set(LN_W, LN_H, len);
+    s.bLineL.position.set(-LN_X, -SURFACE_Y + 0.035, 0);
+    s.bLineR.material = edgeMats[s.colorBottom];
+    s.bLineR.scale.set(LN_W, LN_H, len);
+    s.bLineR.position.set(LN_X, -SURFACE_Y + 0.035, 0);
+    s.tLineL.material = edgeMats[s.colorTop];
+    s.tLineL.scale.set(LN_W, LN_H, len);
+    s.tLineL.position.set(-LN_X, SURFACE_Y - 0.035, 0);
+    s.tLineR.material = edgeMats[s.colorTop];
+    s.tLineR.scale.set(LN_W, LN_H, len);
+    s.tLineR.position.set(LN_X, SURFACE_Y - 0.035, 0);
+
+    // --- 激光横梁：位于指定层的小球高度，横跨跑道 ---
+    s.laserBeam.visible = s.laserLane >= 0;
+    s.laserEmitL.visible = s.laserLane >= 0;
+    s.laserEmitR.visible = s.laserLane >= 0;
+    if (s.laserLane >= 0) {
+      const ly = s.laserLane === 0 ? -BALL_REST_Y : BALL_REST_Y;
+      s.laserBeam.position.set(0, ly, s.laserZ);
+      s.laserBeam.scale.set(W * 0.92, 0.12, 0.16);
+      s.laserEmitL.position.set(-CFG.halfW + 0.18, ly, s.laserZ);
+      s.laserEmitR.position.set(CFG.halfW - 0.18, ly, s.laserZ);
+      s.laserEmitL.scale.set(0.26, 0.34, 0.34);
+      s.laserEmitR.scale.set(0.26, 0.34, 0.34);
+    }
+
+    // --- 旋转能量环：位于段中心，缺口即安全层 ---
+    s.rotRing.visible = s.rotPhase >= 0;
+    if (s.rotPhase >= 0) {
+      s.rotRing.position.set(0, 0, 0);
+      s.rotRing.rotation.z = s.rotPhase;
+    }
+
+    // --- 断裂跑道：整层隐藏（板面 / 泛光 / 边线 / 能量线），只在近端留一条红色断口标记 ---
     s.bSlab.visible = !s.holeBottom;
     s.bGlow.visible = !s.holeBottom;
     s.bEdgeL.visible = !s.holeBottom;
     s.bEdgeR.visible = !s.holeBottom;
+    s.bLineL.visible = !s.holeBottom;
+    s.bLineR.visible = !s.holeBottom;
     s.bHoleMark.visible = s.holeBottom;
     if (s.holeBottom) {
       s.bHoleMark.scale.set(W, 0.3, 0.5);
@@ -2113,6 +2427,8 @@
     s.tGlow.visible = !s.holeTop;
     s.tEdgeL.visible = !s.holeTop;
     s.tEdgeR.visible = !s.holeTop;
+    s.tLineL.visible = !s.holeTop;
+    s.tLineR.visible = !s.holeTop;
     s.tHoleMark.visible = s.holeTop;
     if (s.holeTop) {
       s.tHoleMark.scale.set(W, 0.3, 0.5);
@@ -2235,6 +2551,11 @@
     s.barrierTop = false;
     s.holeBottom = false;
     s.holeTop = false;
+    s.laserLane = -1;
+    s.laserZ = 0;
+    s.laserPhase = 0;
+    s.rotPhase = -1;
+    s.rotSpeed = 0.8;
     s.padLane = -1;
     s.padHit = false;
     s.comboCounted = false;
@@ -2247,60 +2568,72 @@
     const stage = state.stage;
     const armed = !safe && state.time > 2.5;   // 开局 2.5 秒内不刷任何玩法元素
 
-    // 上一段是玩家先经过的一段（更靠近玩家），它可能因障碍 / 断裂把玩家逼到某一层，
-    // 或因弹跳板强制换到对侧层。forcedLane 记录玩家进入本段时“只能待在”的层：
-    //   -1 = 上一段未强制，玩家可选层；0 = 被迫在底层；1 = 被迫在顶层。
-    // 本段若在 forcedLane 放障碍墙或断裂口，玩家刚落地就被封死 → 必死。
-    // 因此本段所有“封层”操作都必须避开 forcedLane，保证始终留有一条可通行跑道。
-    const prev = segments[segments.length - 1];
-    let forcedLane = -1;
-    if (prev) {
-      if (prev.holeBottom || prev.barrierBottom) forcedLane = 1;
-      else if (prev.holeTop || prev.barrierTop) forcedLane = 0;
-      else if (prev.padLane >= 0 && prev.padType === 'jump') forcedLane = 1 - prev.padLane;
-    }
-
-    // 强制换层元素（障碍墙 / 断裂口）之间至少间隔一段随速度增长的缓冲：
-    // 速度越快，留给玩家的反应距离越长；避免高速下连续切线造成“必死连击”
+    // 强制换层元素（障碍墙 / 断裂 / 激光 / 旋转环）之间至少间隔一段随速度增长的缓冲：
+    // 速度越快，留给玩家的反应距离越长；这是“允许连续换层”但仍然公平的基础。
     const center = (far + near) / 2;
     const dynamicGap = Math.max(CFG.forceGapZ, state.speed * CFG.forceGapSpeedFactor);
     const forceGapOk = (state.lastForceZ - center) >= dynamicGap;
 
-    // 障碍墙：封锁一层，但不得封玩家被上一段逼到的层
-    if (armed && forceGapOk && Math.random() < 0.42) {
-      let lane = Math.random() < 0.5 ? 0 : 1;
-      if (lane === forcedLane) lane = 1 - lane;
-      if (lane === 0) s.barrierBottom = true;
-      else s.barrierTop = true;
-      state.lastForceZ = center;
+    /* --- 障碍导演：统一从模板里挑选障碍，保证“换层”成为核心操作 ---
+       类型互斥：每段最多一个强制换层元素，另一层永远可以通行。
+       逐段交替封锁不同层，避免玩家只换颜色、长时间不翻重力。 */
+    if (armed && forceGapOk) {
+      let type = null;
+      // 开局第一段强制放封锁墙，引导玩家主动翻转重力
+      if (state.armedCount === 0) {
+        type = 'barrier';
+      } else {
+        const r = Math.random();
+        if (stage >= 3 && r < 0.15) type = 'rot';            // 旋转能量环（紫色）
+        else if (stage >= 2 && r < 0.36) type = 'laser';     // 周期激光（红色）
+        else if (r < 0.78) type = 'barrier';                 // 单层封锁墙
+        else if (stage >= 2) type = 'hole';                  // 断裂跑道
+      }
+
+      if (type) {
+        // 优先封锁「上一段强制层的另一侧」，形成连续左右换层的节奏。
+        // 动态间距（≥0.9 秒反应距离）已经保证玩家能看到下一段障碍并完成翻转，
+        // 因此允许封锁 player 当前被迫停留的层 —— 这正是“重力翻转成为核心”的关键。
+        let lane = (state.lastForceLane >= 0 && Math.random() < 0.72)
+          ? 1 - state.lastForceLane
+          : (Math.random() < 0.5 ? 0 : 1);
+
+        if (type === 'barrier') {
+          if (lane === 0) s.barrierBottom = true; else s.barrierTop = true;
+        } else if (type === 'hole') {
+          if (lane === 0) s.holeBottom = true; else s.holeTop = true;
+        } else if (type === 'laser') {
+          s.laserLane = lane;
+          s.laserZ = (Math.random() * 0.2 - 0.1) * len;      // 基本在段中心
+          s.laserPhase = Math.random() * 3000;               // 每根激光闪烁相位错开
+        } else if (type === 'rot') {
+          s.rotPhase = Math.random() * Math.PI * 2;
+          s.rotSpeed = 0.72 + stage * 0.07;                  // 后期转得更快
+        }
+
+        state.lastForceZ = center;
+        state.lastForceLane = lane;
+        state.armedCount++;
+      }
     }
 
-    // 断裂缺口：第二阶段解锁，整层跑道消失
-    // ⚠️ 互斥 1：本段不得与障碍墙同时出现（单段最多封一层，避免两层全封）。
-    // ⚠️ 互斥 2：断裂口不得落在 forcedLane，否则形成「上一段逼你切层 → 本段那层又断」
-    //          的无反应空间连击（玩家视角即“上面断裂、下面也没有跑道”）。
-    if (armed && forceGapOk && stage >= 2 && !s.barrierBottom && !s.barrierTop && Math.random() < 0.2) {
-      let lane = Math.random() < 0.5 ? 0 : 1;
-      if (lane === forcedLane) lane = 1 - lane;   // 换到另一层，避开被迫层
-      if (lane === 0) s.holeBottom = true;
-      else s.holeTop = true;
-      state.lastForceZ = center;
-    }
-
-    const blockedBottom = s.barrierBottom || s.holeBottom;   // 该层本段不可通行
-    const blockedTop = s.barrierTop || s.holeTop;
+    // 激光所在层视作“当前危险层”，用于光点 / 道具 / 踏板避让
+    const laserHazardBottom = s.laserLane === 0;
+    const laserHazardTop = s.laserLane === 1;
+    const blockedBottom = s.barrierBottom || s.holeBottom || laserHazardBottom;
+    const blockedTop = s.barrierTop || s.holeTop || laserHazardTop;
 
     // 加速带 / 弹跳板：第三阶段解锁
     // 弹跳板会强制换层，只有“两层都可通行”时才允许出现，否则会把玩家弹进障碍 / 裂口。
-    if (armed && stage >= 3 && !(blockedBottom && blockedTop) && Math.random() < 0.22) {
+    if (armed && stage >= 3 && !(blockedBottom && blockedTop) && s.rotPhase < 0 && Math.random() < 0.22) {
       s.padLane = blockedBottom ? 1 : (blockedTop ? 0 : (Math.random() < 0.5 ? 0 : 1));
       const bothClear = !blockedBottom && !blockedTop;
       s.padType = (stage >= 4 && bothClear && Math.random() < 0.5) ? 'jump' : 'boost';
       s.padZ = (Math.random() * 0.5 - 0.2) * len;
     }
 
-    // 收集光点：每段 0~2 个
-    if (Math.random() < (safe ? 0.5 : 0.72) && !(blockedBottom && blockedTop)) {
+    // 收集光点：每段 0~2 个（旋转环段不刷，避免把玩家引向危险层）
+    if (s.rotPhase < 0 && Math.random() < (safe ? 0.5 : 0.72) && !(blockedBottom && blockedTop)) {
       let lane = Math.random() < 0.5 ? 0 : 1;
       if (lane === 0 && blockedBottom) lane = 1;
       else if (lane === 1 && blockedTop) lane = 0;
@@ -2316,7 +2649,7 @@
 
     // 道具：护盾 / 复活球 / 磁吸。18% 概率出现一种（三种等权），避开被障碍封死的层
     s.pickup = null;
-    if (!safe && !(blockedBottom && blockedTop) && Math.random() < CFG.pickupChance) {
+    if (s.rotPhase < 0 && !safe && !(blockedBottom && blockedTop) && Math.random() < CFG.pickupChance) {
       let lane = Math.random() < 0.5 ? 0 : 1;
       if (lane === 0 && blockedBottom) lane = 1;
       else if (lane === 1 && blockedTop) lane = 0;
@@ -2326,13 +2659,13 @@
 
     // 护盾道具尽量出现在障碍物"前面"：本段有障碍/断裂时，有概率在更靠近玩家的上一段补一个护盾，
     // 让玩家来得及先拿到护盾再面对危险（只补一部分，保持随机性）
-    if (armed && (s.barrierBottom || s.barrierTop || s.holeBottom || s.holeTop)
+    if (armed && (s.barrierBottom || s.barrierTop || s.holeBottom || s.holeTop || s.laserLane >= 0 || s.rotPhase >= 0)
         && Math.random() < CFG.shieldBeforeObstacleChance) {
       const prevSeg = segments[segments.length - 1];
-      if (prevSeg && !prevSeg.pickup) {
+      if (prevSeg && !prevSeg.pickup && prevSeg.rotPhase < 0) {
         // 上一段若本身封了一层，就把护盾放在仍可通行的另一层
-        const pbBlocked = prevSeg.barrierBottom || prevSeg.holeBottom;
-        const ptBlocked = prevSeg.barrierTop || prevSeg.holeTop;
+        const pbBlocked = prevSeg.barrierBottom || prevSeg.holeBottom || prevSeg.laserLane === 0;
+        const ptBlocked = prevSeg.barrierTop || prevSeg.holeTop || prevSeg.laserLane === 1;
         if (!(pbBlocked && ptBlocked)) {
           let lane = Math.random() < 0.5 ? 0 : 1;
           if (lane === 0 && pbBlocked) lane = 1;
@@ -2453,7 +2786,11 @@
     /* --- 颜色判定相关 --- */
     curSeg: null,           // 当前所处赛道段（用于检测“越线”）
     mismatchTime: 0,        // 颜色不符持续时长（用于警示）
-    lastForceZ: 999,        // 上一次生成「必须换层」元素（障碍墙/断裂）的 z 中心，用于保证最小间距
+    lastForceZ: 999,        // 上一次生成「必须换层」元素的 z 中心，用于保证最小间距
+    lastForceLane: -1,      // 上一次强制封锁的层（0/1），用于交替左右换层
+    armedCount: 0,          // 本局已生成的强制障碍数（第 0 个用于教学引导）
+    lastFlipAward: 0,       // 上次翻转奖励的时间戳（防止狂按刷分）
+    flipGlow: 0,            // 翻转瞬间的跑道边缘增亮（逐帧衰减）
   };
 
   /* ==========================================================
@@ -2632,6 +2969,8 @@
      ========================================================== */
   const $ = (id) => document.getElementById(id);
   const scoreEl = $('score');
+  const hudDist = $('hudDist');
+  const laneTag = $('laneTag');
   const speedFill = $('speedFill');
   const speedVal = $('speedVal');
   const bestVal = $('bestVal');
@@ -2677,6 +3016,7 @@
   const btnPauseHome = $('btnPauseHome');
 
   const osSpeed = $('osSpeed');
+  const osDist = $('osDist');
   const osCombo = $('osCombo');
   const osOrbs = $('osOrbs');
   const osFlip = $('osFlip');
@@ -2742,6 +3082,14 @@
   const boardList = $('boardList');
   const boardNote = $('boardNote');
   const boardBack = $('boardBack');
+  const boardPodium = $('boardPodium');
+  const boardMe = $('boardMe');
+  const boardError = $('boardError');
+  const boardErrorTxt = $('boardErrorTxt');
+  const boardRetry = $('boardRetry');
+  const cloudStatus = $('cloudStatus');
+  const cloudStatusTxt = $('cloudStatusTxt');
+  const cloudRetry = $('cloudRetry');
   // 成就页
   const openMedals = $('openMedals');
   const medalList = $('medalList');
@@ -2813,37 +3161,180 @@
   /* ---------- 排行榜数据层 ----------
      配好 config.js → 走 Supabase 云端榜单；
      没配或请求失败 → 自动退回本地榜单。界面代码不区分来源。 */
-  let cloudClient = null;      // Supabase 客户端
-  let boardCache = [];         // 已按昵称去重、已排序的榜单
+  let cloudClient = null;      // Supabase 客户端（初始化失败时保留实例，便于重连）
+  let cloudReady = false;      // 探活是否成功；失败时先用本地榜
+  let boardCache = [];         // 已去重、已排序的榜单（统一结构）
   let boardMode = 'local';     // 'cloud' | 'local'
-  let cloudError = '';         // 云端不可用的原因（展示在榜单底部，便于排查）
+  let cloudError = '';         // 云端不可用的原因
+  let cloudState = 'connecting'; // connecting | ok | fail | reconnecting
+  let boardHasDistance = true;   // 云端是否已有 distance 列（老库自动降级）
+  const PENDING_KEY = 'sr_pending_scores';
 
-  /** 初始化云端客户端 */
+  /* ---- 网络工具：移动端弱网时避免请求无限挂起 ---- */
+  function withTimeout(promise, ms) {
+    let tid = 0;
+    const timeout = new Promise((_, reject) => {
+      tid = setTimeout(() => reject(new Error('请求超时')), ms || 10000);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(tid));
+  }
+
+  /** 给 Supabase 的每个请求加超时；超时后中止请求，避免手机端卡在“登录中” */
+  function supabaseFetch(input, init) {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 10000);
+    return fetch(input, { ...(init || {}), signal: ctrl.signal })
+      .finally(() => clearTimeout(tid));
+  }
+
+  /** Safari 隐私模式等场景下 localStorage 可能抛错，给 Supabase 一份安全存储 */
+  const safeStorage = {
+    getItem(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    setItem(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+    removeItem(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  };
+
+  /** 动态加载脚本（本地 vendor 缺失时的 CDN 兜底） */
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.onload = () => resolve(true);
+      s.onerror = () => reject(new Error('脚本加载失败'));
+      document.head.appendChild(s);
+    });
+  }
+
+  /** 更新主页云端状态条 */
+  function setCloudStatus(state, msg) {
+    cloudState = state;
+    if (!cloudStatus) return;
+    cloudStatus.classList.remove('ok', 'fail', 'busy');
+    if (state === 'ok') cloudStatus.classList.add('ok');
+    else if (state === 'fail') cloudStatus.classList.add('fail');
+    else cloudStatus.classList.add('busy');
+    cloudStatusTxt.textContent = msg || (
+      state === 'ok' ? '云端已连接' :
+      state === 'fail' ? '云端连接失败' :
+      state === 'reconnecting' ? '正在重新连接云端…' : '正在连接云端…'
+    );
+    cloudRetry.hidden = state !== 'fail';
+  }
+
+  /** 初始化云端客户端：优先本地 vendor，失败再 CDN；所有请求带超时 */
   async function initLeaderboard() {
     const cfg = window.SR_CONFIG || {};
     if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
       cloudError = 'config.js 未填写';
+      setCloudStatus('fail', '云端未配置');
       return false;
     }
 
+    setCloudStatus('connecting', '正在连接云端…');
     try {
-      const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-      cloudClient = mod.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+      let create = (window.supabase && window.supabase.createClient)
+        ? window.supabase.createClient : null;
 
-      // 先试查一次，把 URL / key / 建表 问题提前暴露出来
-      const { error } = await cloudClient.from('scores').select('id').limit(1);
+      // 本地 vendor 不可用时依次尝试公共 CDN（UMD 版，避免移动端 ESM 兼容问题）
+      if (!create) {
+        const sources = [
+          'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js',
+          'https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js',
+        ];
+        for (const src of sources) {
+          try {
+            await withTimeout(loadScript(src), 8000);
+            if (window.supabase && window.supabase.createClient) {
+              create = window.supabase.createClient;
+              break;
+            }
+          } catch (e) { /* 继续尝试下一个源 */ }
+        }
+      }
+      if (!create) throw new Error('Supabase 客户端加载失败');
+
+      cloudClient = create(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+        auth: {
+          persistSession: true,          // 刷新 / 重开页面后恢复登录
+          autoRefreshToken: true,        // 自动续期，避免手机端 token 过期后提交失败
+          detectSessionInUrl: true,      // 处理邮箱确认 / 找回密码链接
+          storage: safeStorage,
+        },
+        global: { fetch: supabaseFetch },
+      });
+
+      // 先试查一次，把 URL / key / 建表问题提前暴露
+      const { error } = await withTimeout(
+        cloudClient.from('scores').select('id').limit(1), 9000
+      );
       if (error) throw error;
 
+      cloudReady = true;
       boardMode = 'cloud';
       cloudError = '';
+      setCloudStatus('ok', '云端已连接');
       return true;
     } catch (e) {
       console.warn('云端榜单不可用，已退回本地榜：', e);
-      cloudClient = null;
+      cloudReady = false;
       boardMode = 'local';
       cloudError = (e && (e.message || e.error_description)) || '连接失败';
+      setCloudStatus('fail', '云端连接失败：' + cloudError);
       return false;
     }
+  }
+
+  /** 恢复登录会话（带超时）；手机端刷新后也能保持登录 */
+  async function restoreAuthSession() {
+    if (!cloudClient) return null;
+    try {
+      const { data } = await withTimeout(cloudClient.auth.getSession(), 8000);
+      authSession = (data && data.session) || null;
+    } catch (e) {
+      console.warn('恢复登录会话失败', e);
+    }
+    return authSession;
+  }
+
+  /** 绑定登录状态监听（每个客户端只绑定一次，避免事件重复注册） */
+  function bindAuthListener() {
+    if (!cloudClient || cloudClient.__srAuthBound) return;
+    cloudClient.__srAuthBound = true;
+    cloudClient.auth.onAuthStateChange((evt, s) => {
+      authSession = s || null;
+      if (evt === 'PASSWORD_RECOVERY') {
+        recoveryPending = true;
+        showScreen('nameScreen');
+        setAuthMode('resetConfirm');
+      }
+      if ((evt === 'SIGNED_IN' || evt === 'TOKEN_REFRESHED') && cloudReady) {
+        flushPending();   // 登录 / 续期后补交离线成绩
+      }
+    });
+  }
+
+  /** 手动 / 网络恢复后的重连：重新探活、恢复会话、补交成绩 */
+  async function reconnectCloud() {
+    if (cloudState === 'connecting' || cloudState === 'reconnecting') return false;
+    setCloudStatus('reconnecting', '正在重新连接云端…');
+    const ok = await initLeaderboard();
+    if (!ok) {
+      setCloudStatus('fail', '云端连接失败：' + (cloudError || '网络异常'));
+      return false;
+    }
+    bindAuthListener();
+    await restoreAuthSession();
+    try {
+      await refreshBoard();
+      await flushPending();
+    } catch (e) {
+      console.warn('重连后刷新榜单失败', e);
+    }
+    renderHome();
+    // 如果排行榜正开着，顺便刷新
+    if (!document.getElementById('boardScreen').classList.contains('hide')) renderBoard();
+    return true;
   }
 
   /** 读取本地榜单（未配置云端时使用） */
@@ -2864,109 +3355,230 @@
     return authSession ? 'u:' + authSession.user.id : 'n:' + playerName;
   }
 
-  function dedupeBoard(list) {
-    const map = new Map();
-    for (const r of list) {
-      const key = boardKeyOf(r);
-      const cur = map.get(key);
-      if (!cur || r.dist > cur.dist || (r.dist === cur.dist && r.pts > cur.pts)) map.set(key, r);
-    }
-    return [...map.values()].sort((a, b) => b.dist - a.dist || b.pts - a.pts);
+  /** 统一榜单项结构：score 是主成绩，distance 是真实跑动距离（老数据可能缺失） */
+  function normalizeRecord(r) {
+    return {
+      name: String(r.name || ''),
+      user_id: r.user_id || null,
+      score: Number(r.score != null ? r.score : r.dist) || 0,
+      pts: Number(r.pts) || 0,
+      combo: Number(r.combo) || 0,
+      distance: (r.distance === null || r.distance === undefined) ? null : Number(r.distance),
+      created_at: r.created_at || null,
+    };
   }
 
-  /** 拉取榜单到缓存 */
+  /** 统一排序：得分 → 光点 → 距离 → 提交时间（早提交优先） */
+  function compareBoard(a, b) {
+    return (b.score - a.score) ||
+      (b.pts - a.pts) ||
+      ((b.distance || 0) - (a.distance || 0)) ||
+      (Date.parse(a.created_at || 0) - Date.parse(b.created_at || 0));
+  }
+
+  function dedupeBoard(list) {
+    const map = new Map();
+    for (const raw of list) {
+      const r = normalizeRecord(raw);
+      const key = boardKeyOf(r);
+      const cur = map.get(key);
+      if (!cur || compareBoard(r, cur) < 0) map.set(key, r);
+    }
+    return [...map.values()].sort(compareBoard);
+  }
+
+  /** 拉取榜单到缓存（自动兼容没有 distance 列的老库） */
   async function refreshBoard() {
-    if (cloudClient) {
-      const { data, error } = await cloudClient
+    if (cloudClient && cloudReady) {
+      const colsOld = 'name,dist,pts,combo,user_id,created_at';
+      const colsFull = colsOld + ',distance';
+      const build = (cols) => cloudClient
         .from('scores')
-        .select('name,dist,pts,combo,user_id')
+        .select(cols)
         .order('dist', { ascending: false })
         .order('pts', { ascending: false })
         .limit(300);
+
+      let data = null;
+      let error = null;
+      if (boardHasDistance !== false) {
+        ({ data, error } = await withTimeout(build(colsFull), 10000));
+        if (error && /distance/i.test(String(error.message || ''))) {
+          // 老库没有 distance 列：降级查询，历史记录的距离显示为「—」
+          boardHasDistance = false;
+          ({ data, error } = await withTimeout(build(colsOld), 10000));
+        } else if (!error) {
+          boardHasDistance = true;
+        }
+      } else {
+        ({ data, error } = await withTimeout(build(colsOld), 10000));
+      }
       if (error) throw error;
-      boardCache = dedupeBoard(data || []).slice(0, 20);
+      boardMode = 'cloud';
+      boardCache = dedupeBoard(data || []);
     } else {
-      boardCache = dedupeBoard(loadLocalBoard()).slice(0, 20);
+      boardMode = 'local';
+      boardCache = dedupeBoard(loadLocalBoard());
     }
     return boardCache;
   }
 
-  /** 当前账号在榜单里的最好距离 */
+  /** 当前账号在榜单里的最好得分 */
   function playerBest() {
     const key = myBoardKey();
     const me = boardCache.find((r) => boardKeyOf(r) === key);
-    return me ? me.dist : 0;
+    return me ? me.score : 0;
+  }
+
+  /* ---- 待补交队列：断网时不丢成绩，恢复后补交并做幂等检查 ---- */
+  function loadPending() {
+    try {
+      const l = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+      return Array.isArray(l) ? l : [];
+    } catch (e) { return []; }
+  }
+  function savePending(list) {
+    try { localStorage.setItem(PENDING_KEY, JSON.stringify(list.slice(-20))); } catch (e) {}
+  }
+  function queuePending(rec) {
+    const list = loadPending();
+    // 同分 / 同光点 / 同距离只留一条，避免重复提交
+    if (list.some((x) => x.score === rec.score && x.pts === rec.pts && x.distance === rec.distance)) return;
+    list.push(rec);
+    savePending(list);
+  }
+
+  /** 插入一条成绩；若云端还没有 distance 列，自动去掉该字段重试 */
+  async function insertScoreRecord(rec) {
+    const uid = authSession && authSession.user && authSession.user.id;
+    if (!cloudClient || !uid) throw new Error('未登录');
+    const payload = {
+      user_id: uid,
+      name: rec.name,
+      dist: Math.max(0, Math.floor(rec.score)),
+      pts: Math.max(0, Math.floor(rec.pts)),
+      combo: Math.max(0, Math.floor(rec.combo)),
+    };
+    if (boardHasDistance !== false && rec.distance != null) {
+      payload.distance = Math.max(0, Math.floor(rec.distance));
+    }
+    let res = await withTimeout(cloudClient.from('scores').insert(payload), 12000);
+    if (res.error && /distance/i.test(String(res.error.message || ''))) {
+      boardHasDistance = false;
+      delete payload.distance;
+      res = await withTimeout(cloudClient.from('scores').insert(payload), 12000);
+    }
+    if (res.error) throw res.error;
+  }
+
+  /** 补交队列：插入前先查同账号近 2 分钟是否有同分记录，防止重复记分 */
+  async function flushPending() {
+    if (!cloudClient || !cloudReady || !authSession) return;
+    const uid = authSession.user.id;
+    const list = loadPending();
+    if (!list.length) return;
+    const remain = [];
+    for (const rec of list) {
+      try {
+        const { data, error } = await withTimeout(
+          cloudClient.from('scores').select('id')
+            .eq('user_id', uid)
+            .eq('dist', rec.score)
+            .eq('pts', rec.pts)
+            .gte('created_at', new Date(Math.max(0, Date.parse(rec.created_at || Date.now()) - 300000)).toISOString())
+            .limit(1), 8000
+        );
+        if (error) throw error;
+        if (data && data.length) continue;   // 已经提交过
+        await insertScoreRecord(rec);
+      } catch (e) {
+        remain.push(rec);
+      }
+    }
+    savePending(remain);
+    if (!remain.length) setCloudStatus('ok', '云端已连接');
   }
 
   /**
    * 提交一局无尽成绩。
-   * 返回：>0 名次 / -1 上传失败 / -2 已提交但没进前 20
+   * 返回：>0 名次 / -1 上传失败或已进入待补交 / -2 已提交但未上榜
    */
-  async function submitRecord(dist, pts, combo) {
+  async function submitRecord(score, pts, combo, distance) {
     const rec = {
       name: playerName,
-      dist: Math.max(0, Math.floor(dist)),
+      score: Math.max(0, Math.floor(score)),
       pts: Math.max(0, Math.floor(pts)),
       combo: Math.max(0, Math.floor(combo)),
+      distance: distance == null ? null : Math.max(0, Math.floor(distance)),
+      created_at: new Date().toISOString(),
     };
 
     if (cloudClient) {
-      // 云端只能在登录状态下写入，user_id 由 RLS 校验必须等于当前账号
-      if (!authSession) return -1;
+      // 手机端可能还没收到 onAuthStateChange：提交前主动恢复一次会话
+      if (!authSession) {
+        try {
+          const { data } = await withTimeout(cloudClient.auth.getSession(), 6000);
+          authSession = (data && data.session) || null;
+        } catch (e) { /* 网络异常时继续走失败分支 */ }
+      }
+      if (!authSession) { queuePending(rec); return -1; }
+
       try {
-        const { error } = await cloudClient
-          .from('scores')
-          .insert({ ...rec, user_id: authSession.user.id });
-        if (error) throw error;
+        await insertScoreRecord(rec);
         await refreshBoard();
-        const key = myBoardKey();
-        const idx = boardCache.findIndex((r) => boardKeyOf(r) === key);
+        const idx = boardCache.findIndex((r) => boardKeyOf(r) === myBoardKey());
+        setCloudStatus('ok', '云端已连接');
         return idx >= 0 ? idx + 1 : -2;
       } catch (e) {
         console.warn('成绩上传失败', e);
+        const msg = String((e && (e.message || e.error_description)) || '');
+        // 权限 / 约束类错误不排队（重试也不会成功），网络 / 超时才暂存
+        if (!/row-level security|permission|violates|check constraint|23514|42501/i.test(msg)) {
+          queuePending(rec);
+        }
+        setCloudStatus('fail', '成绩上传失败：' + (msg || '网络异常'));
         return -1;
       }
     }
 
-    // 本地模式：同名只保留更好的一笔
-    const list = loadLocalBoard();
-    const i = list.findIndex((r) => r.name === playerName);
+    // 本地模式：同一昵称只保留更好的一笔
+    const list = dedupeBoard(loadLocalBoard());
+    const myKey = 'n:' + playerName;
+    const i = list.findIndex((r) => boardKeyOf(r) === myKey);
     if (i >= 0) {
-      if (rec.dist > list[i].dist || (rec.dist === list[i].dist && rec.pts > list[i].pts)) list[i] = rec;
+      if (compareBoard(normalizeRecord(rec), list[i]) < 0) list[i] = normalizeRecord(rec);
     } else {
-      list.push(rec);
+      list.push(normalizeRecord(rec));
     }
-    list.sort((a, b) => b.dist - a.dist || b.pts - a.pts);
-    localStorage.setItem(BOARD_KEY, JSON.stringify(list.slice(0, 20)));
-
-    boardCache = dedupeBoard(list).slice(0, 20);
+    list.sort(compareBoard);
+    localStorage.setItem(BOARD_KEY, JSON.stringify(list.slice(0, 50)));
+    boardCache = list;
     const idx2 = boardCache.findIndex((r) => boardKeyOf(r) === myBoardKey());
     return idx2 >= 0 ? idx2 + 1 : -2;
   }
 
   /**
-   * 查询「上一名」：找分数严格大于自己的最小一条记录。
-   * 返回 { name, dist } 或 null（已登顶 / 无数据 / 查询失败）。
-   * 整个函数用 try/catch 包住，任何异常都静默返回 null，绝不能阻塞结算页。
+   * 查询「上一名」：找得分严格大于自己的最小一条记录。
+   * 返回 { name, score } 或 null。
    */
   async function fetchPrevRank(myBest) {
     try {
-      if (cloudClient) {
-        // 云端只读需要登录态；未登录时没有自己的名次，直接当作无数据
+      if (cloudClient && cloudReady) {
         if (!authSession) return null;
-        const { data, error } = await cloudClient
-          .from('scores')
-          .select('name,dist')
-          .gt('dist', myBest)
-          .order('dist', { ascending: true })
-          .limit(1);
+        const { data, error } = await withTimeout(
+          cloudClient.from('scores')
+            .select('name,dist')
+            .gt('dist', myBest)
+            .order('dist', { ascending: true })
+            .limit(1), 8000
+        );
         if (error) throw error;
-        return (data && data[0]) || null;
+        const r = data && data[0];
+        return r ? { name: r.name, score: Number(r.dist) || 0 } : null;
       }
-      // 本地榜单：boardCache 已按 dist 降序，取第一个比自己高的即可
       let best = null;
       for (const r of boardCache) {
-        if (r.dist > myBest && (!best || r.dist < best.dist)) best = r;
+        if (r.score > myBest && (!best || r.score < best.score)) best = r;
       }
       return best;
     } catch (e) {
@@ -2992,7 +3604,7 @@
     const p = loadProgress();
     const cleared = Object.keys(p.stars || {}).length;
     campaignMeta.textContent = '已通关 ' + cleared + ' / ' + LEVELS.length;
-    endlessMeta.textContent = '个人最佳 ' + playerBest() + ' M';
+    endlessMeta.textContent = '个人最佳 ' + playerBest() + ' 分';
 
     // 等级 / 经验 / 货币
     const prog = loadProgressData();
@@ -3048,7 +3660,16 @@
   }
 
   /** 登录成功后统一收尾：写入昵称、刷新数据、进入主页 */
-  function afterLogin(user) {
+  async function afterLogin(user) {
+    // 立即恢复一次会话：手机端 onAuthStateChange 可能比 UI 晚，避免结算提交被误判未登录
+    if (cloudClient) {
+      try {
+        const { data } = await withTimeout(cloudClient.auth.getSession(), 8000);
+        if (data && data.session) authSession = data.session;
+      } catch (e) { /* 忽略：后续还有主动 getSession 兜底 */ }
+    }
+    if (!authSession && user) authSession = { user };   // 极端情况下先保证能提交
+
     const meta = (user && user.user_metadata) || {};
     // 昵称优先取注册时填的 display_name，没有就用邮箱前缀
     playerName = String(meta.display_name || (user && user.email) || '玩家').slice(0, 12);
@@ -3061,6 +3682,7 @@
         bestVal.textContent = String(state.best).padStart(5, '0');
         renderHome();
         showScreen('startScreen');
+        if (cloudReady) { setCloudStatus('ok', '云端已连接'); flushPending(); }
       });
   }
 
@@ -3106,7 +3728,7 @@
         recoveryPending = false;
         // 清掉 URL 里的 recovery 令牌，避免刷新重复触发
         history.replaceState(null, '', window.location.pathname);
-        afterLogin(authSession.user);
+        await afterLogin(authSession.user);
       } catch (e) {
         authErr.textContent = (e && (e.message || e.error_description)) || '保存失败';
       } finally {
@@ -3141,11 +3763,11 @@
           authErr.textContent = '注册成功，请先到邮箱点确认链接，再回来登录';
           return;
         }
-        afterLogin(data.user);
+        await afterLogin(data.user);
       } else {
         const { data, error } = await cloudClient.auth.signInWithPassword({ email, password: pass });
         if (error) throw error;
-        afterLogin(data.user);
+        await afterLogin(data.user);
       }
     } catch (e) {
       const msg = (e && (e.message || e.error_description)) || '操作失败';
@@ -3260,62 +3882,124 @@
     });
   }
 
-  /** 渲染排行榜（前 10 名） */
-  async function renderBoard() {
-    boardList.innerHTML = '<div class="board-empty">加载中…</div>';
-    boardNote.textContent = boardMode === 'cloud'
-      ? '数据来源：云端 Supabase'
-      : ('本地榜单' + (cloudError ? ' · 云端不可用：' + cloudError : ''));
+  /** 距离格式化：老数据没有真实距离时显示「—」，绝不拿得分冒充距离 */
+  function fmtDistance(r) {
+    return r.distance == null ? '—' : (Math.floor(r.distance) + ' M');
+  }
 
-    try {
-      await refreshBoard();
-    } catch (e) {
-      console.warn('榜单拉取失败，展示缓存', e);
-      boardNote.textContent = '榜单拉取失败 · 展示本地缓存';
+  /** 前三名荣誉卡：p1 金 / p2 银 / p3 铜 */
+  function podiumCard(rank, r) {
+    const div = document.createElement('div');
+    div.className = 'podium-card p' + rank + (r ? '' : ' empty');
+    if (!r) {
+      div.innerHTML =
+        '<div class="podium-medal">' + rank + '</div>' +
+        '<div class="podium-name">虚位以待</div>' +
+        '<div class="podium-score">--</div>';
+      return div;
     }
+    div.innerHTML =
+      '<div class="podium-medal">' + rank + '</div>' +
+      '<div class="podium-name">' + esc(r.name || '玩家') + '</div>' +
+      '<div class="podium-score">' + r.score + '<small>分</small></div>' +
+      '<div class="podium-sub">距离 ' + fmtDistance(r) + ' · 光点 ' + r.pts + '</div>';
+    return div;
+  }
 
+  /** 底部固定「我的排名」：独立于滚动区，不会遮挡列表 */
+  function renderBoardMe(list) {
+    const myKey = myBoardKey();
+    const myIdx = list.findIndex((r) => boardKeyOf(r) === myKey);
+    boardMe.hidden = false;
+    if (myIdx >= 0) {
+      const r = list[myIdx];
+      boardMe.innerHTML =
+        '<div class="bm-rank">#' + (myIdx + 1) + '</div>' +
+        '<div><div class="bm-name">' + esc(r.name || playerName || '我') + '</div>' +
+        '<div class="bm-meta">距离 ' + fmtDistance(r) + ' · 光点 ' + r.pts + '</div></div>' +
+        '<div class="bm-score">' + r.score + '<small>分</small></div>' +
+        '<div class="bm-dist">' + fmtDistance(r) + '</div>' +
+        '<div class="bm-pts">' + r.pts + '</div>';
+    } else {
+      boardMe.innerHTML =
+        '<div class="bm-rank">—</div>' +
+        '<div><div class="bm-name">' + esc(playerName || '我') + '</div>' +
+        '<div class="bm-meta">未上榜 · 最佳 ' + playerBest() + ' 分</div></div>' +
+        '<div class="bm-score">—</div><div class="bm-dist">—</div><div class="bm-pts">—</div>';
+    }
+  }
+
+  /** 渲染排行榜内容（前三名 + 前 10 列表 + 我的排名） */
+  function renderBoardContent() {
     const list = boardCache;
+    boardPodium.innerHTML = '';
     boardList.innerHTML = '';
+
+    // 前三名按「2 - 1 - 3」排列，第一名居中且更高
+    [2, 1, 3].forEach((rank) => {
+      boardPodium.appendChild(podiumCard(rank, list[rank - 1] || null));
+    });
 
     if (!list.length) {
       boardList.innerHTML = '<div class="board-empty">还没有记录，去跑一局吧</div>';
+      boardMe.hidden = true;
       return;
     }
 
     const head = document.createElement('div');
     head.className = 'board-row head';
-    head.innerHTML = '<div>#</div><div>玩家</div><div>分数</div><div>光点</div>';
+    head.innerHTML = '<div>排名</div><div>玩家</div><div>得分</div><div>距离</div><div>光点</div>';
     boardList.appendChild(head);
 
-    // 自己的那一行高亮：优先按账号 ID 匹配，本地模式退回昵称
     const myKey = myBoardKey();
     list.slice(0, 10).forEach((r, i) => {
       const row = document.createElement('div');
       row.className = 'board-row' + (boardKeyOf(r) === myKey ? ' me' : '');
+      const dist = fmtDistance(r);
       row.innerHTML =
-        '<div class="board-rank">' + (i + 1) + '</div>' +
-        '<div>' + esc(r.name) + '</div>' +
-        '<div class="board-dist">' + r.dist + ' M</div>' +
-        '<div class="board-pts">' + (r.pts || 0) + '</div>';
+        '<div class="bi-rank">' + (i + 1) + '</div>' +
+        '<div class="bi-player"><div class="bi-name">' + esc(r.name || '玩家') + '</div>' +
+        '<div class="bi-sub">距离 ' + dist + ' · 光点 ' + r.pts + '</div></div>' +
+        '<div class="bi-score">' + r.score + '<small>分</small></div>' +
+        '<div class="bi-dist">' + dist + '</div>' +
+        '<div class="bi-pts">' + r.pts + '</div>';
       boardList.appendChild(row);
     });
 
-    // 「我的排名」条：吸附在榜单底部，列表滚动时始终可见（不随内容滚走）
-    const myIdx = list.findIndex((r) => boardKeyOf(r) === myKey);
-    const me = document.createElement('div');
-    me.className = 'board-me';
-    if (myIdx >= 0) {
-      me.innerHTML =
-        '<div class="bm-rank">#' + (myIdx + 1) + '</div>' +
-        '<div class="bm-name">' + esc(playerName || '我') + '</div>' +
-        '<div class="bm-dist">' + list[myIdx].dist + ' M</div>';
-    } else {
-      me.innerHTML =
-        '<div class="bm-rank">—</div>' +
-        '<div class="bm-name">' + esc(playerName || '我') + '</div>' +
-        '<div class="bm-dist">未上榜 · 最佳 ' + playerBest() + ' M</div>';
+    renderBoardMe(list);
+  }
+
+  /** 渲染排行榜（拉取失败时给出明确提示与重试按钮） */
+  async function renderBoard() {
+    boardError.hidden = true;
+    boardPodium.innerHTML = '';
+    boardMe.hidden = true;
+    boardList.innerHTML = '<div class="board-empty">加载中…</div>';
+    boardNote.textContent = cloudState === 'ok' ? '数据来源：云端 Supabase' : '正在读取榜单…';
+
+    try {
+      await refreshBoard();
+      const pending = loadPending().length;
+      boardNote.textContent = (boardMode === 'cloud' ? '数据来源：云端 Supabase' : '本地榜单')
+        + (pending ? ' · ' + pending + ' 条成绩待补交' : '');
+      // 云端不可用但本地有缓存：明确提示，而不是假装榜单正常
+      if (boardMode !== 'cloud' && cloudState === 'fail') {
+        boardError.hidden = false;
+        boardErrorTxt.textContent = '云端暂时无法连接，请检查网络后重试。'
+          + (cloudError ? '（' + cloudError + '）' : '');
+      }
+      // 云端已恢复：顺手补交离线期间暂存的成绩（不阻塞渲染）
+      if (boardMode === 'cloud') flushPending();
+    } catch (e) {
+      console.warn('榜单拉取失败', e);
+      boardError.hidden = false;
+      boardErrorTxt.textContent = '云端暂时无法连接，请检查网络后重试。'
+        + (cloudError ? '（' + cloudError + '）' : '');
+      boardNote.textContent = boardCache.length ? '展示上次缓存的榜单' : '';
+      setCloudStatus('fail', '云端连接失败：' + ((e && e.message) || '网络异常'));
     }
-    boardList.appendChild(me);
+
+    renderBoardContent();
   }
 
   /* ==========================================================
@@ -3336,17 +4020,32 @@
     if (performance.now() < state.inputLockUntil) return;   // 重开后的短暂输入屏蔽
     state.gravity *= -1;
     state.targetY = state.gravity * BALL_REST_Y;
+    if (laneTag) laneTag.textContent = state.gravity < 0 ? '下层' : '上层';
     state.squash = -0.22;    // 起跳瞬间轻微拉长，落地再压扁
     state.squashVel = -2.5;
     // 本局统计 + 每日任务：翻转次数
     state.flips++;
     dailyAdd('d_flip', 1);
     saveDaily();               // 离散事件立即落盘，刷新页面不丢进度
-    // 视觉反馈：画面轻微滚转 + 球边粒子爆开
+    // 视觉反馈：画面轻微滚转 + 球边粒子爆开 + 跑道边缘增亮
     container.classList.remove('flip');
     void container.offsetWidth;
     container.classList.add('flip');
     spawnBurst(0, state.ballY, 0.2, COLORS[state.colorIdx], 7, 2.6, 0.24);
+    // 上下层之间拉出一条能量光点路径，明确提示“换到了哪一层”
+    const fromY = state.ballY;
+    for (let i = 1; i <= 3; i++) {
+      const t = i / 4;
+      spawnBurst(0, fromY + (state.targetY - fromY) * t, 0.15, COLORS[state.colorIdx], 2, 1.1, 0.15);
+    }
+    state.flipGlow = 1;
+    // 翻转奖励：0.9 秒内连续按键不重复给分，避免无意义刷分
+    const nowMs = performance.now();
+    if (nowMs - state.lastFlipAward > 900) {
+      state.lastFlipAward = nowMs;
+      state.score += 2;
+      floatText('SHIFT +2', '#9fe9ff');
+    }
     sfxFlip();
   }
 
@@ -3992,6 +4691,10 @@
     for (const d of reviveDots) { d.active = false; d.sp.visible = false; }
     state.milestonesHit.clear();   // 里程碑每局重新计
     state.lastForceZ = 999;        // 障碍间距计时重置
+    state.lastForceLane = -1;
+    state.armedCount = 0;
+    state.lastFlipAward = 0;
+    state.flipGlow = 0;
     state.beatPrev = false;
     state.overReadyAt = 0;
     warnEl.classList.remove('on');
@@ -4027,6 +4730,8 @@
 
     // HUD 复位
     scoreEl.textContent = '00000';
+    if (hudDist) hudDist.textContent = '0';
+    if (laneTag) laneTag.textContent = '下层';
     speedVal.textContent = String(Math.round(CFG.baseSpeed * 3.6));
     speedFill.style.width = '6%';
     bestWrap.classList.remove('hot');
@@ -4099,7 +4804,7 @@
     state.overShown = false;
 
     const lv = state.level;
-    const dist = Math.floor(state.score);   // 统一主分数（米）
+    const dist = Math.floor(state.score);   // 统一主分数（分），与真实里程 state.distance 区分
     // 星级只看本局收集到的光点数量（成绩已统一为分数，不再参与星级判定）
     const stars = state.orbs >= lv.target * 0.09 ? 3 : (state.orbs >= lv.target * 0.045 ? 2 : 1);
 
@@ -4290,7 +4995,7 @@
     // 只有无尽模式进排行榜；闯关模式只记通关进度
     // 上传是异步的，先把 Promise 拿到手，等结算页弹出后再把名次填进去
     const recordPromise = state.gameMode === 'endless'
-      ? submitRecord(score, state.orbs, state.comboMax)
+      ? submitRecord(score, state.orbs, state.comboMax, state.distance)
       : Promise.resolve(0);
 
     sfxCrash();
@@ -4310,6 +5015,7 @@
       bestVal.textContent = String(state.best).padStart(5, '0');
 
       // 本局成绩明细
+      osDist.textContent = Math.floor(state.distance) + ' M';
       osSpeed.textContent = Math.round(state.maxSpeedSeen * 3.6) + ' KM/H';
       osCombo.textContent = String(state.comboMax);
       osOrbs.textContent = String(state.orbs);
@@ -4357,8 +5063,8 @@
         const myBest = Math.max(playerBest(), score);
         const prev = await fetchPrevRank(myBest);
         if (!prev) return;
-        const diff = Math.max(1, Math.round(prev.dist - myBest));
-        overGap.textContent = '上一名「' + prev.name + '」 ' + prev.dist + ' M · 还差 ' + diff + ' 分';
+        const diff = Math.max(1, Math.round(prev.score - myBest));
+        overGap.textContent = '上一名「' + prev.name + '」 ' + prev.score + ' 分 · 还差 ' + diff + ' 分';
         overGap.hidden = false;
       }).catch(() => { overRank.textContent = '成绩上传失败'; });
     }, 620);
@@ -4408,13 +5114,13 @@
 
       // distance 是物理里程，只用于生成节奏与阶段解锁，不受倍率影响
       state.distance += spd * dt;
-      // score 是统一主分数（米）：里程按当前连击倍率累积，HUD / 排行榜 / 里程碑都看它
+      // score 是统一主分数（分）：里程按当前连击倍率累积，HUD / 排行榜 / 里程碑都看它
       state.score += spd * dt * comboMultiplier();
       checkMilestones();
 
       if (state.gameMode === 'endless') {
-        // 每 400 米进入新阶段，解锁新的玩法元素
-        const st = Math.min(5, 1 + Math.floor(state.distance / 400));
+        // 每 350 米进入新阶段（100~500 米区间就能体验到断裂 / 激光）
+        const st = Math.min(5, 1 + Math.floor(state.distance / 350));
         if (st !== state.stage) {
           state.stage = st;
           showStage(st);
@@ -4527,9 +5233,30 @@
     if (state.revivePhase || reviveFxUntil) ballGlow.material.opacity = 0;
     else ballGlow.material.opacity = 0.46 + Math.sin(performance.now() * 0.004) * 0.08;
 
+    /* --- 3.6 新障碍动画：激光闪烁 / 能量环旋转（只做视觉，不影响物理帧） --- */
+    if (playing) {
+      const nowMs = performance.now();
+      for (let i = 0; i < segments.length; i++) {
+        const s = segments[i];
+        if (s.laserLane >= 0) {
+          const cycle = 3000, onDur = 1800;
+          const ph = ((nowMs + s.laserPhase) % cycle + cycle) % cycle;
+          const on = ph < onDur;
+          const warn = !on && (cycle - ph) < 450;   // 开启前 0.45 秒预警闪烁
+          s.laserBeam.material.opacity = on ? 0.95 : (warn ? 0.30 + 0.28 * Math.abs(Math.sin(nowMs * 0.03)) : 0.10);
+          s.laserBeam.scale.y = on ? 0.16 : 0.07;   // 关闭时收细，远看也能判断当前状态
+        }
+        if (s.rotPhase >= 0) {
+          s.rotRing.rotation.z = s.rotPhase + (nowMs * 0.001) * s.rotSpeed;
+        }
+      }
+    }
+
     /* --- 4. 判定（无任何宽容缓冲：颜色不符立即结束） --- */
     if (playing) {
       const seg = currentSegment();
+      const nowMs = performance.now();
+      const laneNow = state.gravity < 0 ? 0 : 1;
 
       if (seg) {
         /* 4.0 断裂跑道：小球所在层整段没有跑道 → 直接坠落 */
@@ -4552,6 +5279,33 @@
           return;
         }
 
+        /* 4.1b 激光横梁：只在该层、且光束开启时致命；关闭时可以安全穿过 */
+        if (seg.laserLane >= 0) {
+          const wz = seg.group.position.z + seg.laserZ;
+          if (Math.abs(wz) < 1.7 && laneNow === seg.laserLane) {
+            const ph = ((nowMs + seg.laserPhase) % 3000 + 3000) % 3000;
+            if (ph < 1800) {
+              die('被激光击中');
+              return;
+            }
+          }
+        }
+
+        /* 4.1c 旋转能量环：环体扫过的角度致命，缺口是唯一安全层
+           环几何弧长 = 1.15π，缺口 0.85π，上下两层恰好一危一安 */
+        if (seg.rotPhase >= 0) {
+          if (Math.abs(seg.group.position.z) < 1.7) {
+            const ballAng = state.gravity < 0 ? -Math.PI / 2 : Math.PI / 2;
+            const arc = Math.PI * 1.15;
+            const rot = seg.rotRing.rotation.z;
+            const rel = ((ballAng - rot) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+            if (rel < arc) {
+              die('被能量环切断');
+              return;
+            }
+          }
+        }
+
         /* 4.2 越线判定：进入新一段跑道的当帧立刻判定 */
         if (seg !== state.curSeg) {
           state.curSeg = seg;
@@ -4566,7 +5320,7 @@
 
         // 成功躲避：带障碍 / 断裂的赛道段完全过球后，连击 +1（每段只计一次）
         if (!s.comboCounted
-            && (s.barrierBottom || s.barrierTop || s.holeBottom || s.holeTop)
+            && (s.barrierBottom || s.barrierTop || s.holeBottom || s.holeTop || s.laserLane >= 0 || s.rotPhase >= 0)
             && gz > Math.max(2.0, Math.min(s.len * 0.42, 4.2)) / 2 + CFG.ballR) {
           s.comboCounted = true;
           addCombo();
@@ -4681,7 +5435,8 @@
     scene.fog.color.lerp(moodFog, moodK);
     scene.background.lerp(moodFog, moodK);
     // 跑道边缘霓虹呼吸：只改变泛光透明度，不影响颜色判定
-    const neonPulse = 0.10 + Math.sin(performance.now() * 0.0028) * 0.035;
+    const neonPulse = 0.10 + Math.sin(performance.now() * 0.0028) * 0.035 + state.flipGlow * 0.18;
+    state.flipGlow *= Math.pow(0.03, dt);
     glowMats[0].opacity = neonPulse;
     glowMats[1].opacity = neonPulse;
 
@@ -4705,6 +5460,8 @@
     /* --- 6. HUD --- */
     // 主分数只有这一个数字：距离 × 连击倍率
     const dist = Math.floor(state.score);
+    // 真实里程与得分分开显示（得分受连击倍率影响，里程只反映实际跑动）
+    if (hudDist) hudDist.textContent = String(Math.floor(state.distance));
     if (dist !== state.dispScore) {
       state.dispScore = dist;
       scoreEl.textContent = String(dist).padStart(5, '0');
@@ -4830,6 +5587,14 @@
     renderHome();
     showScreen('startScreen');
   });
+  // 云端重连 / 排行榜重试：弱网或切后台回来后可手动恢复
+  cloudRetry.addEventListener('click', () => reconnectCloud());
+  boardRetry.addEventListener('click', () => {
+    setCloudStatus('reconnecting', '正在重新连接云端…');
+    reconnectCloud().then((ok) => { if (ok) renderBoard(); });
+  });
+  // 网络恢复时自动重连并补交离线成绩（只触发一次，避免重复请求）
+  window.addEventListener('online', () => reconnectCloud());
   // 退出登录（云端）或回到昵称页（本地）
   changeName.addEventListener('click', logout);
   authGo.addEventListener('click', doAuth);
@@ -4965,22 +5730,15 @@
   initLeaderboard()
     .then(async () => {
       if (!cloudClient) return;
-      // 先挂监听再取会话：从重置邮件链接进入时，getSession 会消费 URL 里的
-      // recovery 令牌并触发 PASSWORD_RECOVERY 事件，必须在此之前挂上监听才不会漏
-      cloudClient.auth.onAuthStateChange((evt, s) => {
-        authSession = s || null;
-        if (evt === 'PASSWORD_RECOVERY') {
-          recoveryPending = true;
-          showScreen('nameScreen');
-          setAuthMode('resetConfirm');
-        }
-      });
-      // 恢复上次登录会话（Supabase 会自己存在 localStorage 里）
-      const { data } = await cloudClient.auth.getSession();
-      authSession = (data && data.session) || null;
+      // 先挂监听再取会话：恢复密码链接的 PASSWORD_RECOVERY 事件不能被漏掉
+      bindAuthListener();
+      // 恢复上次登录会话（Supabase 会自己存在 localStorage 里；这里带超时避免弱网卡死）
+      await restoreAuthSession();
     })
     .catch(() => {})
-    .then(() => refreshBoard().catch(() => {}))
+    .then(() => refreshBoard().catch((e) => {
+      console.warn('启动时拉取榜单失败', e);
+    }))
     .then(() => {
       state.best = playerBest();
       bestVal.textContent = String(state.best).padStart(5, '0');
@@ -4999,6 +5757,7 @@
         localStorage.setItem(NAME_KEY, playerName);
         renderHome();
         showScreen('startScreen');
+        if (cloudReady) flushPending();
       } else {
         openNameScreen();
       }
